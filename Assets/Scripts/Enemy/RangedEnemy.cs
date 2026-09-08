@@ -1,24 +1,32 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyHealth))]
+[RequireComponent(typeof(NavMeshAgent))]
 public class RangedEnemy : MonoBehaviour
 {
     [Header("Combat")]
-    public GameObject projectilePrefab;   
+    public GameObject projectilePrefab;
     public Transform firePoint;
-    public float fireRate = 2f;        
+    public float fireRate = 2f;
     public int projectileDamage = 10;
+
+    [Header("Range")]
     public float detectionRange = 8f;
+    public float retreatRange = 4f;
 
     [Header("Target")]
-    public Transform player;          
+    public Transform player;
 
     private float fireTimer;
     private EnemyHealth enemyHealth;
+    private NavMeshAgent agent;
 
-    void Start()
+    private void Start()
     {
         enemyHealth = GetComponent<EnemyHealth>();
+        agent = GetComponent<NavMeshAgent>();
+        agent.updateRotation = false;
 
         if (player == null)
         {
@@ -27,12 +35,15 @@ public class RangedEnemy : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         if (player == null) return;
         if (enemyHealth != null && enemyHealth.currentHealth <= 0) return;
 
+        FaceTarget();
+
         float distance = Vector3.Distance(transform.position, player.position);
+
         if (distance <= detectionRange)
         {
             fireTimer += Time.deltaTime;
@@ -42,65 +53,64 @@ public class RangedEnemy : MonoBehaviour
                 fireTimer = 0f;
             }
         }
+
+        if (distance <= retreatRange)
+        {
+            Retreat();
+        }
+        else
+        {
+            agent.ResetPath();
+        }
     }
 
-    void Shoot()
+    private void FaceTarget()
+    {
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.01f)
+        {
+            transform.rotation = Quaternion.LookRotation(direction);
+        }
+    }
+
+    private void Retreat()
+    {
+        Vector3 directionAwayFromPlayer = (transform.position - player.position).normalized;
+        Vector3 retreatTarget = transform.position + directionAwayFromPlayer * retreatRange;
+
+        NavMeshHit navHit;
+        if (NavMesh.SamplePosition(retreatTarget, out navHit, retreatRange, NavMesh.AllAreas))
+        {
+            agent.SetDestination(navHit.position);
+        }
+    }
+
+    private void Shoot()
     {
         if (projectilePrefab == null || firePoint == null) return;
 
         Vector3 targetPoint = player.position + Vector3.up * 1f;
         Vector3 direction = (targetPoint - firePoint.position).normalized;
 
-        GameObject ball = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
-
-        Projectile projScript = ball.GetComponent<Projectile>();
-        if (projScript == null)
+        GameObject projectileObject = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
+        Projectile projectile = projectileObject.GetComponent<Projectile>();
+        if (projectile == null)
         {
-            projScript = ball.AddComponent<Projectile>();
+            projectile = projectileObject.AddComponent<Projectile>();
         }
 
-        projScript.damage = projectileDamage;
-        projScript.direction = direction;
+        projectile.damage = projectileDamage;
+        projectile.direction = direction;
     }
 
-    void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
-    }
-}
 
-public class Projectile : MonoBehaviour
-{
-    public float speed = 10f;
-    public int damage = 10;
-    public Vector3 direction;
-    public float lifeTime = 5f;
-
-    void Start()
-    {
-        Destroy(gameObject, lifeTime);
-    }
-
-    void Update()
-    {
-        transform.Translate(direction * speed * Time.deltaTime, Space.World);
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            PlayerHealth ph = other.GetComponent<PlayerHealth>();
-            if (ph != null)
-            {
-                ph.TakeDamage(damage);
-            }
-            Destroy(gameObject);
-        }
-        else if (!other.isTrigger && !other.CompareTag("Enemy"))
-        {
-            Destroy(gameObject);
-        }
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, retreatRange);
     }
 }
