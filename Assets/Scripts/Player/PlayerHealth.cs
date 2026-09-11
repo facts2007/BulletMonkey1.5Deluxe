@@ -60,6 +60,15 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    public void IncreaseMaxHealth(int amount)
+    {
+        maxHealth += amount;
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
+
+        targetHealthScale = (float)currentHealth / maxHealth;
+        UpdateText();
+    }
+
     private IEnumerator DelayRedBar()
     {
         yield return new WaitForSeconds(redBarDelay);
