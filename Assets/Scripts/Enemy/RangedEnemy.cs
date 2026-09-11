@@ -10,9 +10,11 @@ public class RangedEnemy : MonoBehaviour
     public Transform firePoint;
     public float fireRate = 2f;
     public int projectileDamage = 10;
+    public float aimHeightOffset = 0f;
 
     [Header("Range")]
-    public float detectionRange = 8f;
+    public float detectionRange = 12f;
+    public float attackRange = 8f;
     public float retreatRange = 4f;
 
     [Header("Target")]
@@ -40,28 +42,45 @@ public class RangedEnemy : MonoBehaviour
         if (player == null) return;
         if (enemyHealth != null && enemyHealth.currentHealth <= 0) return;
 
-        FaceTarget();
-
         float distance = Vector3.Distance(transform.position, player.position);
 
-        if (distance <= detectionRange)
+        if (distance > detectionRange)
         {
-            fireTimer += Time.deltaTime;
-            if (fireTimer >= fireRate)
-            {
-                Shoot();
-                fireTimer = 0f;
-            }
+            agent.ResetPath();
+            return;
         }
 
-        if (distance <= retreatRange)
+        FaceTarget();
+
+        if (distance < retreatRange)
         {
             Retreat();
+            HandleFiring();
+        }
+        else if (distance > attackRange)
+        {
+            ChasePlayer();
         }
         else
         {
             agent.ResetPath();
+            HandleFiring();
         }
+    }
+
+    private void HandleFiring()
+    {
+        fireTimer += Time.deltaTime;
+        if (fireTimer >= fireRate)
+        {
+            Shoot();
+            fireTimer = 0f;
+        }
+    }
+
+    private void ChasePlayer()
+    {
+        agent.SetDestination(player.position);
     }
 
     private void FaceTarget()
@@ -91,7 +110,7 @@ public class RangedEnemy : MonoBehaviour
     {
         if (projectilePrefab == null || firePoint == null) return;
 
-        Vector3 targetPoint = player.position + Vector3.up * 1f;
+        Vector3 targetPoint = player.position + Vector3.up * aimHeightOffset;
         Vector3 direction = (targetPoint - firePoint.position).normalized;
 
         GameObject projectileObject = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
@@ -107,8 +126,11 @@ public class RangedEnemy : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, retreatRange);

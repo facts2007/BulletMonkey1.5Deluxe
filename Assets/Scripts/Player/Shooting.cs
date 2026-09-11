@@ -14,6 +14,7 @@ public class Gun : MonoBehaviour
 
     [Header("Effects")]
     public GameObject bulletPrefab;
+    public GameObject impactEffect;
     public Transform muzzlePoint;
 
     [Header("Aiming")]
@@ -52,7 +53,8 @@ public class Gun : MonoBehaviour
         UpdateAmmoText();
 
         Transform spawnPoint = muzzlePoint != null ? muzzlePoint : transform;
-        Quaternion spawnRotation = Quaternion.LookRotation(aimCamera.transform.forward);
+        Ray aimRay = aimCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f));
+        Quaternion spawnRotation = Quaternion.LookRotation(aimRay.direction);
 
         if (bulletPrefab != null)
         {
@@ -60,12 +62,17 @@ public class Gun : MonoBehaviour
         }
 
         RaycastHit hit;
-        if (Physics.Raycast(aimCamera.transform.position, aimCamera.transform.forward, out hit, range))
+        if (Physics.Raycast(aimRay, out hit, range))
         {
             EnemyHealth enemyHealth = hit.collider.GetComponent<EnemyHealth>();
             if (enemyHealth != null)
             {
                 enemyHealth.TakeDamage(damage);
+            }
+
+            if (impactEffect != null)
+            {
+                Instantiate(impactEffect, hit.point, Quaternion.LookRotation(hit.normal));
             }
         }
     }
