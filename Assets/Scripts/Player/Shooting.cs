@@ -84,7 +84,7 @@ public class Gun : MonoBehaviour
 
     public void Reload()
     {
-        currentAmmo = maxAmmo;
+        currentAmmo = 50;
         UpdateAmmoText();
     }
 }

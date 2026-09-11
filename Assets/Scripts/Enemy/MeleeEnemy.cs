@@ -16,7 +16,21 @@ public class MeleeEnemy : MonoBehaviour
     private void Start()
     {
         enemyHealth = GetComponent<EnemyHealth>();
+        GameObject gevondenSpeler = GameObject.Find("Speler");
 
+        if (gevondenSpeler == null)
+        {
+            gevondenSpeler = GameObject.FindGameObjectWithTag("Player");
+        }
+
+        if (gevondenSpeler != null)
+        {
+            player = gevondenSpeler.transform;
+        }
+        else
+        {
+            Debug.LogError("Oeps! De speler kon met geen mogelijkheid worden gevonden in de scene. Controleer de naam of tag van je Player object!");
+        }
         if (player == null)
         {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
