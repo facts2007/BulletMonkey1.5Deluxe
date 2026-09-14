@@ -203,6 +203,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   explosionEffect: {fileID: 0}
   popDuration: 0.06
+  partsDropPrefab: {fileID: 1664063014017317535, guid: 63a5ac4c529f92d49be5b2b36aff49b4, type: 3}
+  dropChance: 0.5
+  minDropAmount: 10
+  maxDropAmount: 15
+  ammoDropPrefab: {fileID: 7495273584512899063, guid: 8c3caf651bcc0434090e62280e9a1d8d, type: 3}
+  ammoDropChance: 0.35
+  minAmmoAmount: 20
+  maxAmmoAmount: 30
 --- !u!114 &7137793005522558898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,6 +225,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   maxHealth: 100
   currentHealth: 0
+  pointValue: 10
   healthBar: {fileID: 1685296129331407934}
   redBar: {fileID: 8633021815276435723}
   healthText: {fileID: 4549051430535998838}
@@ -258,7 +267,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemy
   moveSpeed: 2
-  chaseRange: 6
+  chaseRange: 16
   stopDistance: 1.2
   player: {fileID: 0}
 --- !u!1 &3785592549848191586

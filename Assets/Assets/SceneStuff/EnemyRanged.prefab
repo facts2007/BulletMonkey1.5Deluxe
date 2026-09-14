@@ -234,6 +234,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   explosionEffect: {fileID: 0}
   popDuration: 0.06
+  partsDropPrefab: {fileID: 1664063014017317535, guid: 63a5ac4c529f92d49be5b2b36aff49b4, type: 3}
+  dropChance: 0.5
+  minDropAmount: 10
+  maxDropAmount: 15
+  ammoDropPrefab: {fileID: 7495273584512899063, guid: 8c3caf651bcc0434090e62280e9a1d8d, type: 3}
+  ammoDropChance: 0.4
+  minAmmoAmount: 20
+  maxAmmoAmount: 30
 --- !u!114 &1482559839437616309
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,6 +256,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   maxHealth: 100
   currentHealth: 0
+  pointValue: 10
   healthBar: {fileID: 7854001827701788285}
   redBar: {fileID: 5653530693083637559}
   healthText: {fileID: 918951974970262250}
@@ -292,7 +301,9 @@ MonoBehaviour:
   firePoint: {fileID: 3346163699551620208}
   fireRate: 2
   projectileDamage: 10
-  detectionRange: 8
+  aimHeightOffset: 0
+  detectionRange: 12
+  attackRange: 10
   retreatRange: 4
   player: {fileID: 0}
 --- !u!1 &6092676933721916204

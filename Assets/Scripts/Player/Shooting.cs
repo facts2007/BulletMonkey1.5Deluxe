@@ -3,13 +3,15 @@ using TMPro;
 
 public class Gun : MonoBehaviour
 {
+    public static Gun Instance;
+
     [Header("Shooting")]
     public float fireRate = 10f;
     public float range = 100f;
     public int damage = 10;
 
     [Header("Ammo")]
-    public int maxAmmo = 30;
+    public int maxAmmo = 60;
     public int currentAmmo;
 
     [Header("Effects")]
@@ -27,6 +29,7 @@ public class Gun : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
         currentAmmo = maxAmmo;
         UpdateAmmoText();
 
@@ -84,7 +87,13 @@ public class Gun : MonoBehaviour
 
     public void Reload()
     {
-        currentAmmo = 50;
+        currentAmmo = maxAmmo;
+        UpdateAmmoText();
+    }
+
+    public void AddAmmo(int amount)
+    {
+        currentAmmo = Mathf.Min(currentAmmo + amount, maxAmmo);
         UpdateAmmoText();
     }
 }

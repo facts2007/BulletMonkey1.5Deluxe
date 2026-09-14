@@ -9,9 +9,24 @@ public class Enemy : MonoBehaviour
     public GameObject explosionEffect;
     public float popDuration = 0.15f;
 
+    [Header("Parts Drop")]
+    public GameObject partsDropPrefab;
+    public float dropChance = 0.5f;
+    public int minDropAmount = 10;
+    public int maxDropAmount = 15;
+
+    [Header("Ammo Drop")]
+    public GameObject ammoDropPrefab;
+    public float ammoDropChance = 0.35f;
+    public int minAmmoAmount = 20;
+    public int maxAmmoAmount = 30;
+
     public void Explode()
     {
         OnEnemyDied?.Invoke();
+
+        TryDropParts();
+        TryDropAmmo();
 
         if (explosionEffect != null)
         {
@@ -19,6 +34,36 @@ public class Enemy : MonoBehaviour
         }
 
         StartCoroutine(PopAndDestroy());
+    }
+
+    private void TryDropParts()
+    {
+        if (partsDropPrefab == null) return;
+        if (UnityEngine.Random.value > dropChance) return;
+
+        int amount = UnityEngine.Random.Range(minDropAmount, maxDropAmount + 1);
+        GameObject drop = Instantiate(partsDropPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+
+        PartsPickup pickup = drop.GetComponent<PartsPickup>();
+        if (pickup != null)
+        {
+            pickup.amount = amount;
+        }
+    }
+
+    private void TryDropAmmo()
+    {
+        if (ammoDropPrefab == null) return;
+        if (UnityEngine.Random.value > ammoDropChance) return;
+
+        int amount = UnityEngine.Random.Range(minAmmoAmount, maxAmmoAmount + 1);
+        GameObject drop = Instantiate(ammoDropPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+
+        AmmoPickup pickup = drop.GetComponent<AmmoPickup>();
+        if (pickup != null)
+        {
+            pickup.amount = amount;
+        }
     }
 
     private IEnumerator PopAndDestroy()
