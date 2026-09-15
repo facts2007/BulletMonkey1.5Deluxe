@@ -8,6 +8,8 @@ public class Enemy : MonoBehaviour
 
     public GameObject explosionEffect;
     public float popDuration = 0.15f;
+    public bool canBeStomped = true;
+    public bool stompInstantKills = true;
 
     [Header("Parts Drop")]
     public GameObject partsDropPrefab;
@@ -18,8 +20,8 @@ public class Enemy : MonoBehaviour
     [Header("Ammo Drop")]
     public GameObject ammoDropPrefab;
     public float ammoDropChance = 0.35f;
-    public int minAmmoAmount = 20;
-    public int maxAmmoAmount = 30;
+    public int minAmmoAmount = 5;
+    public int maxAmmoAmount = 10;
 
     public void Explode()
     {

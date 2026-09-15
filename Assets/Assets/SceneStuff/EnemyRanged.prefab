@@ -121,7 +121,7 @@ GameObject:
   - component: {fileID: 1593036301520968192}
   m_Layer: 3
   m_Name: EnemyRanged
-  m_TagString: Untagged
+  m_TagString: Enemy1
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -234,6 +234,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   explosionEffect: {fileID: 0}
   popDuration: 0.06
+  canBeStomped: 1
+  stompInstantKills: 0
   partsDropPrefab: {fileID: 1664063014017317535, guid: 63a5ac4c529f92d49be5b2b36aff49b4, type: 3}
   dropChance: 0.5
   minDropAmount: 10

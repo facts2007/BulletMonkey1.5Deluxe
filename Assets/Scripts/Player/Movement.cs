@@ -19,6 +19,10 @@ public class PlayerMovement : MonoBehaviour
     public float groundDistance = 0.3f;
     public LayerMask groundMask;
 
+    [Header("Stomp Detection")]
+    public LayerMask enemyMask;
+    public int stompDamage = 25;
+
     private CharacterController controller;
     private Vector3 velocity;
     private Vector3 currentVelocity;
@@ -27,10 +31,6 @@ public class PlayerMovement : MonoBehaviour
     private bool hasJumped;
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
-
-    [Header("Enemy Stomp")]
-    public int stompDamage = 25;
-    public bool instantKill = false;
 
     private void Awake()
     {
@@ -48,28 +48,26 @@ public class PlayerMovement : MonoBehaviour
     private void HandleGroundedState()
     {
         wasGrounded = isGrounded;
-        isGrounded = controller.isGrounded;
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
 
         if (isGrounded && !wasGrounded)
         {
-            hasJumped = false;
-            coyoteTimeCounter = coyoteTime;
-
             HandleLanded();
         }
 
         if (isGrounded)
         {
             coyoteTimeCounter = coyoteTime;
-
-            if (velocity.y < 0f)
-            {
-                velocity.y = -2f;
-            }
+            hasJumped = false;
         }
         else
         {
             coyoteTimeCounter -= Time.deltaTime;
+        }
+
+        if (isGrounded && velocity.y < 0f)
+        {
+            velocity.y = -2f;
         }
     }
 
@@ -97,12 +95,9 @@ public class PlayerMovement : MonoBehaviour
             jumpBufferCounter -= Time.deltaTime;
         }
 
-        if (jumpBufferCounter > 0f &&
-            coyoteTimeCounter > 0f &&
-            !hasJumped)
+        if (jumpBufferCounter > 0f && coyoteTimeCounter > 0f && !hasJumped)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
             hasJumped = true;
@@ -128,29 +123,33 @@ public class PlayerMovement : MonoBehaviour
         Collider[] hits = Physics.OverlapSphere(groundCheck.position, groundDistance, groundMask);
         if (hits.Length > 0)
         {
+            Debug.Log("Landed on " + hits[0].gameObject.name);
+        }
 
-            if (hits[0].gameObject.layer == LayerMask.NameToLayer("Enemy1"))
-            {
-                HandleLandedOnEnemy(hits[0].gameObject);
-            }
+        CheckStomp();
+    }
+
+    private void CheckStomp()
+    {
+        Collider[] enemyHits = Physics.OverlapSphere(groundCheck.position, groundDistance, enemyMask);
+        foreach (Collider hit in enemyHits)
+        {
+            HandleLandedOnEnemy(hit.gameObject);
         }
     }
 
     private void HandleLandedOnEnemy(GameObject enemy)
     {
-        EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
         Enemy enemyScript = enemy.GetComponent<Enemy>();
+        if (enemyScript == null || !enemyScript.canBeStomped) return;
 
-        if (instantKill)
+        if (enemyScript.stompInstantKills)
         {
-            if (enemyScript != null)
-            {
-                enemyScript.Explode();
-            }
-
+            enemyScript.Explode();
             return;
         }
 
+        EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
         if (enemyHealth != null)
         {
             enemyHealth.TakeDamage(stompDamage);

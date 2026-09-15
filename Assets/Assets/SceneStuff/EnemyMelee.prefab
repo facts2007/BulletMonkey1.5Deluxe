@@ -90,7 +90,7 @@ GameObject:
   - component: {fileID: 5778715734327003116}
   m_Layer: 3
   m_Name: EnemyMelee
-  m_TagString: Untagged
+  m_TagString: Enemy1
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -203,6 +203,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   explosionEffect: {fileID: 0}
   popDuration: 0.06
+  canBeStomped: 1
+  stompInstantKills: 0
   partsDropPrefab: {fileID: 1664063014017317535, guid: 63a5ac4c529f92d49be5b2b36aff49b4, type: 3}
   dropChance: 0.5
   minDropAmount: 10
@@ -267,7 +269,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemy
   moveSpeed: 2
-  chaseRange: 16
+  chaseRange: 20
   stopDistance: 1.2
   player: {fileID: 0}
 --- !u!1 &3785592549848191586
