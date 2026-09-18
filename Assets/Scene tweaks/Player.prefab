@@ -540,8 +540,10 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 9
+  enemyMask:
+    serializedVersion: 2
+    m_Bits: 0
   stompDamage: 25
-  instantKill: 0
 --- !u!114 &2718389638502525748
 MonoBehaviour:
   m_ObjectHideFlags: 0

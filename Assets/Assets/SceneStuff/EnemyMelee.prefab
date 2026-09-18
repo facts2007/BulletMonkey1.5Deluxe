@@ -201,7 +201,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0be7b21002dfdd4181f9d40f6742952, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
-  explosionEffect: {fileID: 0}
+  explosionEffect: {fileID: 2456710671011082351, guid: ee1300dd6239c2241874030e6cf8948c, type: 3}
   popDuration: 0.06
   canBeStomped: 1
   stompInstantKills: 0
