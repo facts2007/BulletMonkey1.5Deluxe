@@ -9,7 +9,7 @@ public class EnemyHealth : MonoBehaviour
     public int currentHealth;
 
     [Header("Points")]
-    public int pointValue = 10;
+    public int pointValue = 10; 
 
     [Header("UI References")]
     public RectTransform healthBar;
@@ -88,9 +88,10 @@ public class EnemyHealth : MonoBehaviour
 
     public void Die()
     {
-        if (PlayerPoints.Instance != null)
+        
+        if (PlayerParts.Instance != null)
         {
-            PlayerPoints.Instance.AddPoints(pointValue);
+            PlayerParts.Instance.AddParts(pointValue);
         }
 
         Enemy enemy = GetComponent<Enemy>();
