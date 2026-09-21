@@ -29,7 +29,7 @@ public class MeleeEnemy : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Oeps! De speler kon met geen mogelijkheid worden gevonden in de scene. Controleer de naam of tag van je Player object!");
+            Debug.LogError("Geen speler gevonden");
         }
         if (player == null)
         {

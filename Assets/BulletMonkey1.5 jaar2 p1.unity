@@ -1072,6 +1072,10 @@ PrefabInstance:
       propertyPath: aimCamera
       value: 
       objectReference: {fileID: 1252429019}
+    - target: {fileID: 6250676753000874092, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
+      propertyPath: fallMultiplier
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 6865566369389505494, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
       propertyPath: m_Name
       value: Player

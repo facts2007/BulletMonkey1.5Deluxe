@@ -14,6 +14,9 @@ public class PlayerDamageContact : MonoBehaviour
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
+        bool isStompOnEnemy = hit.normal.y > 0.5f && hit.gameObject.GetComponent<Enemy>() != null;
+        if (isStompOnEnemy) return;
+
         DamageOnTouch damageSource = hit.gameObject.GetComponent<DamageOnTouch>();
 
         if (damageSource != null && Time.time >= lastDamageTime + damageCooldown)
