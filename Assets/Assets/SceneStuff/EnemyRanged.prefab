@@ -125,7 +125,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2721260101791715762
 Transform:
   m_ObjectHideFlags: 0
@@ -305,7 +305,7 @@ MonoBehaviour:
   fireRate: 2
   projectileDamage: 10
   aimHeightOffset: 0
-  detectionRange: 12
+  detectionRange: 30
   attackRange: 10
   retreatRange: 4
   player: {fileID: 0}
