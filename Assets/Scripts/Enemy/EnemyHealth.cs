@@ -53,7 +53,7 @@ public class EnemyHealth : MonoBehaviour
 
     public void TakeDamage(int amount, bool stomp = false)
     {
-        if (IsDead) return;
+        if (IsDead || amount <= 0) return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
 
         targetHealthScale = (float)currentHealth / maxHealth;
@@ -70,6 +70,10 @@ public class EnemyHealth : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die(stomp);
+        }
+        else if (GameAudio.Instance != null)
+        {
+            GameAudio.Instance.PlayEffect(GameAudio.Instance.enemyDamaged);
         }
     }
 

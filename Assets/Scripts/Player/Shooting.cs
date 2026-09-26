@@ -30,6 +30,8 @@ public class Gun : MonoBehaviour
     public CharacterAnimationDriver characterAnimation;
     public SuperShootAbility superAbility;
     public ShootCameraShake cameraShake;
+    [Tooltip("Random cone half-angle for each super shot. Regular shots stay accurate.")]
+    [Range(0f, 12f)] public float superSpreadAngle = 3.5f;
 
     private float fireCooldown;
     private bool wasSuperShooting;
@@ -87,6 +89,11 @@ public class Gun : MonoBehaviour
         Ray aimRay = aimCamera != null
             ? aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
             : new Ray(spawnPoint.position, spawnPoint.forward);
+        if (superShot && superSpreadAngle > 0f)
+        {
+            Vector2 spread = Random.insideUnitCircle * Mathf.Tan(superSpreadAngle * Mathf.Deg2Rad);
+            aimRay.direction = (Quaternion.LookRotation(aimRay.direction) * new Vector3(spread.x, spread.y, 1f)).normalized;
+        }
         RaycastHit hit = default;
         bool hasHit = false;
         float nearest = range;

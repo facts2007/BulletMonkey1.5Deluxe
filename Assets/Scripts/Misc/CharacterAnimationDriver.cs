@@ -7,6 +7,7 @@ public class CharacterAnimationDriver : MonoBehaviour
     public Transform movementRoot;
     public SuperShootAbility superAbility;
     public Gun playerGun;
+    public SpeedBoostAbility speedBoost;
     public bool walkOnly;
     public float movementThreshold = 0.08f;
     public float shotAnimationSeconds = 0.18f;
@@ -28,6 +29,7 @@ public class CharacterAnimationDriver : MonoBehaviour
         Vector3 difference = movementRoot.position - previousPosition;
         previousPosition = movementRoot.position;
         if (animator == null || Time.deltaTime <= 0f) return;
+        animator.speed = speedBoost != null ? speedBoost.CurrentMultiplier : 1f;
         difference.y = 0f;
         bool moving = difference.magnitude / Time.deltaTime > movementThreshold;
         string state = moving ? "Walk" : "Idle";

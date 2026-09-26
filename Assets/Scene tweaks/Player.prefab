@@ -310,6 +310,7 @@ MonoBehaviour:
   characterAnimation: {fileID: 3913879282054253317}
   superAbility: {fileID: 7619162652312416973}
   cameraShake: {fileID: 4630663254018572895}
+  superSpreadAngle: 3.5
 --- !u!114 &4630663254018572895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -323,8 +324,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShootCameraShake
   normalStrength: 0.015
-  superStrength: 0.085
+  superStrength: 0.22
   shakeSeconds: 0.08
+  superRecoilPerShot: 1
+  superHorizontalRecoil: 1.05
+  recoilLimit: 18
+  recoilRecovery: 5.5
+  superAngularShake: 1.35
+  coceyPositionShake: 0.018
+  coceyAngularShake: 0.25
+  coceyShakeFrequency: 12
+  chargeZoomDegrees: 5
+  zoomResponse: 8
 --- !u!1 &3950726727992000925
 GameObject:
   m_ObjectHideFlags: 0
@@ -486,6 +497,7 @@ GameObject:
   - component: {fileID: 6464154798458302668}
   - component: {fileID: 3913879282054253317}
   - component: {fileID: 7619162652312416973}
+  - component: {fileID: 2930758469514171006}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -552,6 +564,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   walkSpeed: 5
   acceleration: 10
+  speedBoost: {fileID: 2930758469514171006}
   jumpHeight: 2
   gravity: -9
   fallMultiplier: 2.5
@@ -645,6 +658,7 @@ MonoBehaviour:
   movementRoot: {fileID: 7406208651602633699}
   superAbility: {fileID: 7619162652312416973}
   playerGun: {fileID: 5847766487452529917}
+  speedBoost: {fileID: 2930758469514171006}
   walkOnly: 0
   movementThreshold: 0.08
   shotAnimationSeconds: 0.18
@@ -668,6 +682,25 @@ MonoBehaviour:
   gun: {fileID: 5847766487452529917}
   promptText: {fileID: 0}
   chargeFill: {fileID: 0}
+  chargeRing: {fileID: 0}
+  hud: {fileID: 0}
+--- !u!114 &2930758469514171006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6865566369389505494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b620aa266a48f8547aefbacf33bfafce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpeedBoostAbility
+  speedMultiplier: 2
+  duration: 10
+  tintOpacity: 0.1
+  screenTint: {fileID: 0}
+  statusText: {fileID: 0}
   hud: {fileID: 0}
 --- !u!1 &8515028423427794542
 GameObject:

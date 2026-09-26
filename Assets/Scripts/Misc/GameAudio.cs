@@ -8,7 +8,10 @@ public class GameAudio : MonoBehaviour
     public AudioClip shoot;
     public AudioClip enemyExplode;
     public AudioClip enemyStomped;
+    public AudioClip enemyDamaged;
     public AudioClip superShoot;
+    [Tooltip("Looped while Cocey banan is active. Uses the SFX volume slider.")]
+    public AudioClip angryMonkey;
     [Range(0f, 1f)] public float shootGain = 0.6f;
     [Range(0f, 1f)] public float superShootGain = 1f;
 
@@ -22,6 +25,7 @@ public class GameAudio : MonoBehaviour
 
     private AudioSource mainMusicSource;
     private AudioSource pauseMusicSource;
+    private AudioSource angryMonkeySource;
     private AudioSource[] voices;
     private int nextVoice;
     private bool paused;
@@ -33,6 +37,7 @@ public class GameAudio : MonoBehaviour
         SfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("BM.SfxVolume", defaultSfxVolume));
         mainMusicSource = MakeSource(true);
         pauseMusicSource = MakeSource(true);
+        angryMonkeySource = MakeSource(true);
         mainMusicSource.clip = mainGameMusic;
         pauseMusicSource.clip = pauseMenuMusic;
         voices = new AudioSource[24];
@@ -80,13 +85,25 @@ public class GameAudio : MonoBehaviour
             mainMusicSource.Pause();
             if (pauseMusicSource.clip != null) pauseMusicSource.Play();
             foreach (AudioSource voice in voices) voice.Pause();
+            angryMonkeySource.Pause();
         }
         else
         {
             pauseMusicSource.Stop();
             mainMusicSource.UnPause();
             foreach (AudioSource voice in voices) voice.UnPause();
+            angryMonkeySource.UnPause();
         }
+    }
+
+    public void SetSpeedBoostActive(bool active)
+    {
+        if (angryMonkeySource == null) return;
+        if (!active) { angryMonkeySource.Stop(); return; }
+        if (angryMonkey == null) return;
+        angryMonkeySource.clip = angryMonkey;
+        angryMonkeySource.Play();
+        if (paused) angryMonkeySource.Pause();
     }
 
     public void SetMusicVolume(float value)
@@ -108,6 +125,7 @@ public class GameAudio : MonoBehaviour
         if (mainMusicSource != null) mainMusicSource.volume = MusicVolume;
         if (pauseMusicSource != null) pauseMusicSource.volume = MusicVolume;
         if (voices != null) foreach (AudioSource voice in voices) voice.volume = SfxVolume;
+        if (angryMonkeySource != null) angryMonkeySource.volume = SfxVolume;
     }
 
     private void OnDestroy()

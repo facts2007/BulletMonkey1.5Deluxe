@@ -6,6 +6,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement")]
     public float walkSpeed = 5f;
     public float acceleration = 10f;
+    public SpeedBoostAbility speedBoost;
 
     [Header("Jumping")]
     public float jumpHeight = 1.5f;
@@ -81,7 +82,8 @@ public class PlayerMovement : MonoBehaviour
         float vertical = Input.GetAxisRaw("Vertical");
 
         Vector3 inputDirection = (transform.right * horizontal + transform.forward * vertical).normalized;
-        Vector3 targetVelocity = inputDirection * walkSpeed;
+        float speedMultiplier = speedBoost != null ? speedBoost.CurrentMultiplier : 1f;
+        Vector3 targetVelocity = inputDirection * walkSpeed * speedMultiplier;
 
         currentVelocity = Vector3.Lerp(currentVelocity, targetVelocity, acceleration * Time.deltaTime);
 

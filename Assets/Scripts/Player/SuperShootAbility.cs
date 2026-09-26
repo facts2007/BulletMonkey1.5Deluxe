@@ -16,6 +16,7 @@ public class SuperShootAbility : MonoBehaviour
     public Gun gun;
     public TMP_Text promptText;
     public Image chargeFill;
+    public ChargeRingGraphic chargeRing;
     public GameObject hud;
 
     public bool HasBanana => hasBanana;
@@ -90,11 +91,13 @@ public class SuperShootAbility : MonoBehaviour
         if (hud != null) hud.SetActive(isActiveAndEnabled && (hasBanana || IsSuperShooting));
         if (promptText != null)
         {
-            promptText.text = IsSuperShooting ? $"SUPER SHOOT  {remaining:0.0}s"
-                : IsCharging ? $"CHARGING  {ChargeFraction:P0}"
-                : $"SUPER BANANA  •  Hold {activationKey} to charge";
+            promptText.text = IsSuperShooting ? $"SUPER SHOOT\n<size=75%>{remaining:0.0}s remaining</size>"
+                : IsCharging ? $"CHARGING  {ChargeFraction:P0}\n<size=75%>Keep holding {activationKey}</size>"
+                : $"SUPER BANANA\n<size=75%>Hold {activationKey} to charge</size>";
         }
         if (chargeFill != null)
             chargeFill.fillAmount = IsSuperShooting ? remaining / Mathf.Max(0.1f, shootingSeconds) : ChargeFraction;
+        if (chargeRing != null)
+            chargeRing.FillAmount = IsSuperShooting ? remaining / Mathf.Max(0.1f, shootingSeconds) : IsCharging ? ChargeFraction : 1f;
     }
 }

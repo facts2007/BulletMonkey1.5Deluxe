@@ -50,6 +50,7 @@ public static class CombatPresentationSetup
             PrefabUtility.RecordPrefabInstancePropertyModifications(entry.Key.gameObject);
         }
         ConfigureUI();
+        UpgradePowerups();
         AssetDatabase.SaveAssets();
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
         EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
@@ -388,6 +389,7 @@ public static class CombatPresentationSetup
         if (slider == null) return;
         Transform area = slider.transform.Find("FillArea");
         if (area == null) area = Rect("FillArea", slider.transform, new Vector2(360, 6), Vector2.zero);
+        area.SetSiblingIndex(1);
         slider.fillRect.SetParent(area, false);
         slider.fillRect.sizeDelta = Vector2.zero;
         slider.fillRect.anchoredPosition = Vector2.zero;
@@ -396,5 +398,161 @@ public static class CombatPresentationSetup
         // Reassigning refreshes Slider's driven anchors in edit mode.
         slider.direction = Slider.Direction.RightToLeft;
         slider.direction = Slider.Direction.LeftToRight;
+    }
+
+    [MenuItem("Tools/BulletMonkey/Upgrade powerups and RoboMonkey animations")]
+    public static void UpgradePowerups()
+    {
+        if (EditorApplication.isPlaying) throw new InvalidOperationException("Stop Play mode first.");
+        RetargetRobotAnimations();
+        const string coceyPath = "Assets/Models/Prefabs/Cocey banan Variant.prefab";
+        EditPrefab(coceyPath, go =>
+        {
+            Ensure<CoceyBananaPickup>(go);
+            SphereCollider collider = go.GetComponent<SphereCollider>();
+            collider.isTrigger = true;
+            float scale = Mathf.Max(Mathf.Abs(go.transform.lossyScale.x), Mathf.Abs(go.transform.lossyScale.y), Mathf.Abs(go.transform.lossyScale.z));
+            collider.radius = 0.65f / Mathf.Max(0.001f, scale);
+            Rigidbody body = go.GetComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+        });
+        EditPrefab("Assets/Scene tweaks/Player.prefab", WireSpeedBoost);
+        foreach (PlayerMovement player in UnityEngine.Object.FindObjectsByType<PlayerMovement>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            WireSpeedBoost(player.gameObject);
+        foreach (string path in new[] { "Assets/Assets/SceneStuff/EnemyMelee.prefab", "Assets/Assets/SceneStuff/EnemyRanged.prefab" })
+            EditPrefab(path, go => go.GetComponent<Enemy>().coceyBananaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(coceyPath));
+        foreach (Enemy enemy in UnityEngine.Object.FindObjectsByType<Enemy>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            enemy.coceyBananaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(coceyPath);
+            EditorUtility.SetDirty(enemy);
+        }
+        StylePowerupHUD();
+        AssetDatabase.SaveAssets();
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
+    }
+
+    private static void RetargetRobotAnimations()
+    {
+        // The robot FBX exports named clips with static curves. Its matching skeleton
+        // can use BulletMonkey's motion by remapping the rig prefix, without changing either FBX.
+        GameObject robot = AssetDatabase.LoadAssetAtPath<GameObject>(RobotModel);
+        foreach (string state in new[] { "Idle", "Walk", "Shoot", "Empty" })
+        {
+            AnimationClip source = AssetDatabase.LoadAssetAtPath<AnimationClip>(Output + "/BulletMonkey_" + state + ".anim");
+            AnimationClip target = AssetDatabase.LoadAssetAtPath<AnimationClip>(Output + "/RoboMonkey_" + state + ".anim");
+            AnimationClip remapped = new AnimationClip { name = "RoboMonkey " + state, frameRate = source.frameRate };
+            var bindings = new System.Collections.Generic.List<EditorCurveBinding>();
+            var curves = new System.Collections.Generic.List<AnimationCurve>();
+            foreach (EditorCurveBinding originalBinding in AnimationUtility.GetCurveBindings(source))
+            {
+                if (!originalBinding.path.StartsWith("Bulletmonkey_rig")) continue;
+                EditorCurveBinding binding = originalBinding;
+                binding.path = "Robomonkey_grp/Robomonkey_rig" + originalBinding.path.Substring("Bulletmonkey_rig".Length);
+                if (robot.transform.Find(binding.path) == null)
+                    throw new InvalidOperationException("Robot bone missing: " + binding.path);
+                bindings.Add(binding);
+                curves.Add(AnimationUtility.GetEditorCurve(source, originalBinding));
+            }
+            AnimationUtility.SetEditorCurves(remapped, bindings.ToArray(), curves.ToArray());
+            AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(source);
+            settings.loopTime = true;
+            AnimationUtility.SetAnimationClipSettings(remapped, settings);
+            EditorUtility.CopySerialized(remapped, target);
+            EditorUtility.SetDirty(target);
+            UnityEngine.Object.DestroyImmediate(remapped);
+        }
+    }
+
+    private static void WireSpeedBoost(GameObject root)
+    {
+        SpeedBoostAbility boost = Ensure<SpeedBoostAbility>(root);
+        root.GetComponent<PlayerMovement>().speedBoost = boost;
+        CharacterAnimationDriver driver = root.GetComponent<CharacterAnimationDriver>();
+        if (driver != null) driver.speedBoost = boost;
+        foreach (ShootCameraShake shake in root.GetComponentsInChildren<ShootCameraShake>(true))
+        {
+            shake.superStrength = 0.22f;
+            shake.superRecoilPerShot = 1f;
+            shake.superHorizontalRecoil = 1.05f;
+            shake.recoilLimit = 18f;
+            shake.recoilRecovery = 5.5f;
+            shake.superAngularShake = 1.35f;
+        }
+        EditorUtility.SetDirty(root);
+    }
+
+    private static void StylePowerupHUD()
+    {
+        SuperShootAbility ability = UnityEngine.Object.FindFirstObjectByType<SuperShootAbility>();
+        if (ability == null || ability.hud == null) return;
+        RectTransform hud = (RectTransform)ability.hud.transform;
+        hud.sizeDelta = new Vector2(340, 64);
+        Image box = hud.GetComponent<Image>();
+        if (box != null) box.enabled = false;
+        Transform oldTrack = hud.Find("ChargeTrack");
+        if (oldTrack != null) oldTrack.gameObject.SetActive(false);
+        ability.chargeFill = null;
+        RectTransform prompt = ability.promptText.rectTransform;
+        prompt.sizeDelta = new Vector2(250, 60);
+        prompt.anchoredPosition = new Vector2(42, 0);
+        ability.promptText.alignment = TextAlignmentOptions.Left;
+        ability.promptText.fontSize = 20;
+        if (hud.Find("ChargeDial") == null)
+        {
+            RectTransform dial = Rect("ChargeDial", hud, new Vector2(58, 58), new Vector2(-122, 0));
+            Image disc = dial.gameObject.AddComponent<Image>();
+            disc.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            disc.color = new Color(0.04f, 0.035f, 0.025f, 0.8f);
+            disc.raycastTarget = false;
+            var track = Rect("RingTrack", dial, new Vector2(60, 60), Vector2.zero).gameObject.AddComponent<ChargeRingGraphic>();
+            track.color = new Color(1f, 0.85f, 0.3f, 0.2f);
+            track.raycastTarget = false;
+            var ring = Rect("ChargeRing", dial, new Vector2(60, 60), Vector2.zero).gameObject.AddComponent<ChargeRingGraphic>();
+            ring.color = new Color(1f, 0.84f, 0.2f);
+            ring.raycastTarget = false;
+            ability.chargeRing = ring;
+            Label("Key", dial, "F", Vector2.zero, new Vector2(40, 40), 26);
+        }
+        foreach (ChargeRingGraphic graphic in hud.GetComponentsInChildren<ChargeRingGraphic>(true))
+        {
+            Ensure<CanvasRenderer>(graphic.gameObject);
+            if (graphic.name == "RingTrack")
+            {
+                graphic.color = new Color(0.06f, 0.05f, 0.02f, 0.9f);
+                graphic.thickness = 7f;
+                graphic.rectTransform.sizeDelta = new Vector2(64, 64);
+            }
+            else
+            {
+                graphic.color = new Color(1f, 0.93f, 0.55f);
+                graphic.thickness = 4f;
+            }
+            graphic.SetAllDirty();
+        }
+        SpeedBoostAbility boost = ability.GetComponent<SpeedBoostAbility>();
+        Transform canvas = GameObject.Find("PlayerUI").transform;
+        if (boost.screenTint == null)
+        {
+            RectTransform tint = Rect("CoceyScreenTint", canvas, Vector2.zero, Vector2.zero);
+            tint.anchorMin = Vector2.zero; tint.anchorMax = Vector2.one;
+            tint.offsetMin = tint.offsetMax = Vector2.zero;
+            tint.SetAsFirstSibling();
+            boost.screenTint = tint.gameObject.AddComponent<Image>();
+            boost.screenTint.color = Color.clear;
+            boost.screenTint.raycastTarget = false;
+        }
+        if (boost.hud == null)
+        {
+            RectTransform badge = Rect("CoceySpeedHUD", canvas, new Vector2(370, 34), new Vector2(0, -65));
+            badge.anchorMin = badge.anchorMax = new Vector2(0.5f, 1f);
+            boost.statusText = Label("SpeedStatus", badge, "COCEY BANAN ×2", Vector2.zero, new Vector2(370, 34), 20);
+            boost.statusText.color = new Color(1f, 0.48f, 0.38f);
+            boost.hud = badge.gameObject;
+            badge.gameObject.SetActive(false);
+        }
+        EditorUtility.SetDirty(ability);
+        EditorUtility.SetDirty(boost);
     }
 }

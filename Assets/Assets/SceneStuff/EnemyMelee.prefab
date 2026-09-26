@@ -218,6 +218,8 @@ MonoBehaviour:
   maxAmmoAmount: 30
   superBananaPrefab: {fileID: 2403087099593571312, guid: 460b52f83b4099144beb2f14b0c964f1, type: 3}
   superBananaDropChance: 0.01
+  coceyBananaPrefab: {fileID: 550379639904993880, guid: 67693dab55b0d8e4bbde45bcd5ed3831, type: 3}
+  coceyBananaDropChance: 0.05
   flattenOnStomp: 1
   visualRoot: {fileID: 7184546559342612653}
   healthBarObject: {fileID: 7517369261747637278}
@@ -314,6 +316,7 @@ MonoBehaviour:
   movementRoot: {fileID: 4236280763540662345}
   superAbility: {fileID: 0}
   playerGun: {fileID: 0}
+  speedBoost: {fileID: 0}
   walkOnly: 1
   movementThreshold: 0.08
   shotAnimationSeconds: 0.18

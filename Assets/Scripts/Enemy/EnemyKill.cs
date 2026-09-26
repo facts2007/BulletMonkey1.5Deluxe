@@ -27,6 +27,10 @@ public class Enemy : MonoBehaviour
     public GameObject superBananaPrefab;
     [Range(0f, 1f)] public float superBananaDropChance = 0.01f;
 
+    [Header("Cocey banan speed boost")]
+    public GameObject coceyBananaPrefab;
+    [Range(0f, 1f)] public float coceyBananaDropChance = 0.05f;
+
     [Header("Stomp presentation")]
     public bool flattenOnStomp;
     public Transform visualRoot;
@@ -42,8 +46,6 @@ public class Enemy : MonoBehaviour
         if (health != null)
         {
             health.TakeDamage(stompInstantKills ? health.currentHealth : damage, true);
-            if (health.currentHealth > 0 && GameAudio.Instance != null)
-                GameAudio.Instance.PlayEffect(GameAudio.Instance.enemyStomped);
         }
         else DieFromStomp();
     }
@@ -76,6 +78,9 @@ public class Enemy : MonoBehaviour
 
         if (superBananaPrefab != null && UnityEngine.Random.value < superBananaDropChance)
             Instantiate(superBananaPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+
+        if (coceyBananaPrefab != null && UnityEngine.Random.value < coceyBananaDropChance)
+            Instantiate(coceyBananaPrefab, transform.position + Vector3.up * 0.6f, coceyBananaPrefab.transform.rotation);
 
         if (GameAudio.Instance != null)
             GameAudio.Instance.PlayEffect(stomp ? GameAudio.Instance.enemyStomped : GameAudio.Instance.enemyExplode);
