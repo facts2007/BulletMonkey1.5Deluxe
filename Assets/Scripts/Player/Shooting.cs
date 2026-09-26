@@ -26,7 +26,13 @@ public class Gun : MonoBehaviour
     [Header("UI")]
     public TextMeshProUGUI ammoText;
 
+    [Header("Animation and super shooting")]
+    public CharacterAnimationDriver characterAnimation;
+    public SuperShootAbility superAbility;
+    public ShootCameraShake cameraShake;
+
     private float fireCooldown;
+    private bool wasSuperShooting;
 
     private void Awake()
     {
@@ -42,23 +48,62 @@ public class Gun : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale <= 0f) return;
         fireCooldown -= Time.deltaTime;
+
+        bool superShooting = superAbility != null && superAbility.IsSuperShooting;
+        if (superShooting)
+        {
+            if (!wasSuperShooting) fireCooldown = 0f;
+            wasSuperShooting = true;
+            // Accumulate intervals so the stream stays fast even below 40 FPS.
+            int shotsThisFrame = 0;
+            while (fireCooldown <= 0f && shotsThisFrame++ < 8)
+            {
+                Shoot(true);
+                fireCooldown += 1f / Mathf.Max(1f, superAbility.shotsPerSecond);
+            }
+            return;
+        }
+        wasSuperShooting = false;
+        if (superAbility != null && superAbility.IsCharging) return;
 
         if (Input.GetButton("Fire1") && fireCooldown <= 0f && currentAmmo > 0)
         {
             Shoot();
-            fireCooldown = 1f / fireRate;
+            fireCooldown = 1f / Mathf.Max(0.1f, fireRate);
         }
     }
 
-    private void Shoot()
+    private void Shoot(bool superShot = false)
     {
-        currentAmmo--;
-        UpdateAmmoText();
+        if (!superShot)
+        {
+            currentAmmo--;
+            UpdateAmmoText();
+        }
 
         Transform spawnPoint = muzzlePoint != null ? muzzlePoint : transform;
-        Ray aimRay = aimCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f));
-        Quaternion spawnRotation = Quaternion.LookRotation(aimRay.direction);
+        Ray aimRay = aimCamera != null
+            ? aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
+            : new Ray(spawnPoint.position, spawnPoint.forward);
+        RaycastHit hit = default;
+        bool hasHit = false;
+        float nearest = range;
+        foreach (RaycastHit candidate in Physics.RaycastAll(aimRay, range, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (candidate.collider.transform.IsChildOf(transform.root) || candidate.distance >= nearest) continue;
+            nearest = candidate.distance;
+            hit = candidate;
+            hasHit = true;
+        }
+        Vector3 target = hasHit ? hit.point : aimRay.GetPoint(range);
+        Vector3 direction = target - spawnPoint.position;
+        Quaternion spawnRotation = Quaternion.LookRotation(direction.sqrMagnitude > 0.001f ? direction : aimRay.direction);
+
+        if (characterAnimation != null) characterAnimation.NotifyShot();
+        if (cameraShake != null) cameraShake.Kick(superShot);
+        if (GameAudio.Instance != null) GameAudio.Instance.PlayShot(superShot);
 
         float bulletSpeed = 0f;
 
@@ -72,10 +117,9 @@ public class Gun : MonoBehaviour
             }
         }
 
-        RaycastHit hit;
-        if (Physics.Raycast(aimRay, out hit, range))
+        if (hasHit)
         {
-            EnemyHealth enemyHealth = hit.collider.GetComponent<EnemyHealth>();
+            EnemyHealth enemyHealth = hit.collider.GetComponentInParent<EnemyHealth>();
             if (enemyHealth != null)
             {
                 enemyHealth.TakeDamage(damage);
@@ -101,7 +145,7 @@ public class Gun : MonoBehaviour
 
     private void UpdateAmmoText()
     {
-        ammoText.text = currentAmmo + "/" + maxAmmo;
+        if (ammoText != null) ammoText.text = currentAmmo + "/" + maxAmmo;
     }
 
     public void Reload()

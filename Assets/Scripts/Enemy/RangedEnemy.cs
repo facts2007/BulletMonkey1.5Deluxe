@@ -20,6 +20,9 @@ public class RangedEnemy : MonoBehaviour
     [Header("Target")]
     public Transform player;
 
+    [Header("Animation")]
+    public CharacterAnimationDriver characterAnimation;
+
     private float fireTimer;
     private EnemyHealth enemyHealth;
     private NavMeshAgent agent;
@@ -56,6 +59,7 @@ public class RangedEnemy : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale <= 0f || agent == null || !agent.isOnNavMesh) return;
         if (player == null) return;
         if (enemyHealth != null && enemyHealth.currentHealth <= 0) return;
 
@@ -126,6 +130,9 @@ public class RangedEnemy : MonoBehaviour
     private void Shoot()
     {
         if (projectilePrefab == null || firePoint == null) return;
+
+        if (characterAnimation != null) characterAnimation.NotifyShot();
+        if (GameAudio.Instance != null) GameAudio.Instance.PlayShot(false);
 
         Vector3 targetPoint = player.position + Vector3.up * aimHeightOffset;
         Vector3 direction = (targetPoint - firePoint.position).normalized;

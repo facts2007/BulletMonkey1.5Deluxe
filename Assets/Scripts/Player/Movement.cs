@@ -31,6 +31,7 @@ public class PlayerMovement : MonoBehaviour
     private bool hasJumped;
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
+    private bool stompAvailable = true;
 
     private void Awake()
     {
@@ -39,6 +40,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale <= 0f) return;
         HandleGroundedState();
         HandleMovement();
         HandleJump();
@@ -49,6 +51,8 @@ public class PlayerMovement : MonoBehaviour
     {
         wasGrounded = isGrounded;
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        if (isGrounded && !Physics.CheckSphere(groundCheck.position, groundDistance, enemyMask))
+            stompAvailable = true;
 
         if (isGrounded && !wasGrounded)
         {
@@ -101,6 +105,7 @@ public class PlayerMovement : MonoBehaviour
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
             hasJumped = true;
+            stompAvailable = true;
         }
     }
 
@@ -140,20 +145,17 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleLandedOnEnemy(GameObject enemy)
     {
-        Enemy enemyScript = enemy.GetComponent<Enemy>();
-        if (enemyScript == null || !enemyScript.canBeStomped) return;
+        Enemy enemyScript = enemy.GetComponentInParent<Enemy>();
+        if (enemyScript == null || !enemyScript.canBeStomped || !stompAvailable) return;
+        stompAvailable = false;
+        enemyScript.Stomp(stompDamage);
+    }
 
-        if (enemyScript.stompInstantKills)
-        {
-            enemyScript.Explode();
-            return;
-        }
-
-        EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
-        if (enemyHealth != null)
-        {
-            enemyHealth.TakeDamage(stompDamage);
-        }
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        // A descending controller can hit the top before the small ground sphere overlaps it.
+        if (hit.normal.y > 0.5f && velocity.y < -3f)
+            HandleLandedOnEnemy(hit.gameObject);
     }
 
     private void OnDrawGizmosSelected()

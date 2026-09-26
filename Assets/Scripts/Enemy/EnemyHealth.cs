@@ -24,6 +24,7 @@ public class EnemyHealth : MonoBehaviour
     private float targetHealthScale = 1f;
     private float targetRedScale = 1f;
     private Coroutine redBarRoutine;
+    public bool IsDead { get; private set; }
 
     private void Awake()
     {
@@ -50,8 +51,9 @@ public class EnemyHealth : MonoBehaviour
         bar.localScale = scale;
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, bool stomp = false)
     {
+        if (IsDead) return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
 
         targetHealthScale = (float)currentHealth / maxHealth;
@@ -67,7 +69,7 @@ public class EnemyHealth : MonoBehaviour
 
         if (currentHealth <= 0)
         {
-            Die();
+            Die(stomp);
         }
     }
 
@@ -88,7 +90,14 @@ public class EnemyHealth : MonoBehaviour
 
     public void Die()
     {
-        
+        Die(false);
+    }
+
+    private void Die(bool stomp)
+    {
+        if (IsDead) return;
+        IsDead = true;
+        currentHealth = 0;
         if (PlayerParts.Instance != null)
         {
             PlayerParts.Instance.AddParts(pointValue);
@@ -98,7 +107,8 @@ public class EnemyHealth : MonoBehaviour
 
         if (enemy != null)
         {
-            enemy.Explode();
+            if (stomp) enemy.DieFromStomp();
+            else enemy.Explode();
         }
         else
         {
