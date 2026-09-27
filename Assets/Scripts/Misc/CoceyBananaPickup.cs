@@ -21,6 +21,7 @@ public class CoceyBananaPickup : MonoBehaviour
 
     private void Update()
     {
+        if(GetComponent<LootMotion>()!=null)return;
         transform.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.World);
         transform.position = startPosition + Vector3.up * (Mathf.Sin(Time.time * 3f) * bobHeight);
     }
@@ -30,11 +31,13 @@ public class CoceyBananaPickup : MonoBehaviour
 
     private void TryCollect(Collider other)
     {
-        if (collected || Time.timeScale <= 0f) return;
+        if (collected || Time.timeScale <= 0f || (GetComponent<LootMotion>()!=null && GetComponent<LootMotion>().IsFlying)) return;
         SpeedBoostAbility boost = other.GetComponentInParent<SpeedBoostAbility>();
         if (boost == null || !boost.isActiveAndEnabled) return;
         collected = true;
-        boost.Activate();
+        boost.Collect();
         Destroy(gameObject);
     }
 }
+
+

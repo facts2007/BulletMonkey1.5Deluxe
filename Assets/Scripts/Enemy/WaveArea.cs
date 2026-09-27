@@ -37,9 +37,25 @@ public class WaveArea : MonoBehaviour
     [Min(0)] public float spawnInterval = 0.5f;
     [Header("Boss and breaks")]
     public GameObject bossPrefab;
+    [Tooltip("Optional boss-wave music. Gameplay music pauses and resumes at the same position.")]
+    public AudioClip minibossTheme;
+    private bool ownsMinibossMusic;
     [Min(0)] public float intermissionSeconds = 12;
     public bool IsCombatActive {get;private set;}
-    public static bool AnyWaveActive => FindObjectsByType<WaveArea>(FindObjectsSortMode.None).Any(a=>a.IsCombatActive);
+    private static readonly HashSet<WaveArea> areas=new HashSet<WaveArea>();
+    public static bool AnyWaveActive { get { foreach(var area in areas)if(area!=null && area.IsCombatActive)return true;return BossFusionEncounter.IsEncounterActive; } }
+    private void OnEnable(){areas.Add(this);}
+    private void OnDisable(){areas.Remove(this);EndBossMusic();}
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetRegistry(){areas.Clear();sharedCountdownText=null;}
+    [Header("Island difficulty and final clear reward")]
+    [Range(1,5)] public int islandNumber=1;
+    [Min(0)] public float healthIncreasePerIsland=.15f;
+    [Min(0)] public float damageIncreasePerIsland=.1f;
+    public Transform shopSpawn;
+    public Transform rescueCenter;
+    public GameObject waterBucketPrefab;
+    private int lastCount=-1;
     [Header("Exit mist — disabled after every wave is cleared")]
     public GameObject pathBlocker;
     public WaveArea nextArea;
@@ -117,7 +133,8 @@ public class WaveArea : MonoBehaviour
                 SetText(islandName + " · Wave " + currentWave + "/" + waves.Length + " in " + seconds);
                 yield return new WaitForSeconds(1f);
             }
-            living.Clear();
+            if(waves[index].bossWave && GameAudio.Instance!=null)ownsMinibossMusic=GameAudio.Instance.BeginMinibossMusic(minibossTheme);
+            living.Clear();lastCount=-1;
             int count = waves[index].bossWave ? 1 : waves[index].enemyCount;
             for (int i = 0; i < count; i++)
             {
@@ -125,6 +142,7 @@ public class WaveArea : MonoBehaviour
                 GameObject source=waves[index].bossWave && bossPrefab!=null ? bossPrefab : prefabs[UnityEngine.Random.Range(0,prefabs.Length)];
                 GameObject spawned = Instantiate(source, point.position, point.rotation);
                 spawned.SetActive(true);
+                ScaleEnemy(spawned);SpawnFog.Poof(point.position,waves[index].bossWave?2:1);
                 living.Add(spawned.GetComponent<EnemyHealth>());
                 UpdateCount(count - i - 1);
                 if (spawnInterval > 0) yield return new WaitForSeconds(spawnInterval);
@@ -133,27 +151,53 @@ public class WaveArea : MonoBehaviour
             do
             {
                 UpdateCount(0);
-                yield return null;
+                yield return new WaitForSeconds(.1f);
             } while (enemiesRemaining > 0);
+            EndBossMusic();
             IsCombatActive=false;
-            var bucket=FindFirstObjectByType<PlayerBucketInventory>();if(bucket!=null)bucket.AddBucket();
+
             if(index<waves.Length-1)
             {
-                SetText(islandName+" · Wave cleared! +1 bucket · Shop break");
+                SetText(islandName+" · Wave cleared! Next wave soon");
                 yield return new WaitForSeconds(intermissionSeconds);
             }
         }
         waveComplete = true;
+        GiveIslandReward();
         if (pathBlocker != null) pathBlocker.SetActive(false);
         SetText(islandName + " cleared — path open");
         if (nextArea != null) nextArea.Unlock();
     }
 
+    private void EndBossMusic()
+    {
+        if(ownsMinibossMusic && GameAudio.Instance!=null)GameAudio.Instance.EndMinibossMusic();
+        ownsMinibossMusic=false;
+    }
+    public void ScaleEnemy(GameObject enemy)
+    {
+        float hp=1+Mathf.Max(0,islandNumber-1)*healthIncreasePerIsland;
+        float damage=1+Mathf.Max(0,islandNumber-1)*damageIncreasePerIsland;
+        var health=enemy.GetComponent<EnemyHealth>();if(health!=null)health.SetFullHealth(Mathf.RoundToInt(health.maxHealth*hp));
+        var ranged=enemy.GetComponent<RangedEnemy>();if(ranged!=null)ranged.projectileDamage=Mathf.RoundToInt(ranged.projectileDamage*damage);
+        var melee=enemy.GetComponent<MeleeAttack>();if(melee!=null)melee.damage=Mathf.RoundToInt(melee.damage*damage);
+        var touch=enemy.GetComponent<DamageOnTouch>();if(touch!=null)touch.damageAmount=Mathf.RoundToInt(touch.damageAmount*damage);
+    }
+    private void GiveIslandReward()
+    {
+        var shop=FindFirstObjectByType<KabuWaveShop>();
+        if(shop!=null && shopSpawn!=null){SpawnFog.Poof(shop.transform.position);shop.transform.SetPositionAndRotation(shopSpawn.position,shopSpawn.rotation);SpawnFog.Poof(shop.transform.position,2);}
+        if(waterBucketPrefab!=null && rescueCenter!=null)
+        {
+            var bucket=Instantiate(waterBucketPrefab,rescueCenter.position+Vector3.up*.5f,Quaternion.identity);
+            bucket.SetActive(true);SpawnFog.Poof(bucket.transform.position);
+        }
+    }
     private void UpdateCount(int pending)
     {
         living.RemoveAll(h => h == null || h.IsDead || !h.gameObject.activeInHierarchy);
         enemiesRemaining = living.Count + pending;
-        SetText(islandName + " · Wave " + currentWave + "/" + waves.Length + " · " + enemiesRemaining + " enemies");
+        if(lastCount!=enemiesRemaining){lastCount=enemiesRemaining;SetText(islandName + " · Wave " + currentWave + "/" + waves.Length + " · " + enemiesRemaining + " enemies");}
     }
     private void SetText(string value) { if (Text != null) Text.text = value; }
     private void OnDrawGizmosSelected()
@@ -163,3 +207,4 @@ public class WaveArea : MonoBehaviour
         foreach (Transform point in spawnPoints) if (point != null) Gizmos.DrawWireSphere(point.position, .5f);
     }
 }
+

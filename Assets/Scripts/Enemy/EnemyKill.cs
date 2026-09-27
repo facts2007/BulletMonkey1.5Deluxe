@@ -77,10 +77,10 @@ public class Enemy : MonoBehaviour
         TryDropAmmo();
 
         if (superBananaPrefab != null && UnityEngine.Random.value < superBananaDropChance)
-            Instantiate(superBananaPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+            LootMotion.Drop(superBananaPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
 
         if (coceyBananaPrefab != null && UnityEngine.Random.value < coceyBananaDropChance)
-            Instantiate(coceyBananaPrefab, transform.position + Vector3.up * 0.6f, coceyBananaPrefab.transform.rotation);
+            LootMotion.Drop(coceyBananaPrefab, transform.position + Vector3.up * 0.6f, coceyBananaPrefab.transform.rotation);
 
         if (GameAudio.Instance != null)
             GameAudio.Instance.PlayEffect(stomp ? GameAudio.Instance.enemyStomped : GameAudio.Instance.enemyExplode);
@@ -121,7 +121,7 @@ public class Enemy : MonoBehaviour
         if (UnityEngine.Random.value > dropChance) return;
 
         int amount = UnityEngine.Random.Range(minDropAmount, maxDropAmount + 1);
-        GameObject drop = Instantiate(partsDropPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+        GameObject drop = LootMotion.Drop(partsDropPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
 
         PartsPickup pickup = drop.GetComponent<PartsPickup>();
         if (pickup != null)
@@ -136,7 +136,7 @@ public class Enemy : MonoBehaviour
         if (UnityEngine.Random.value > ammoDropChance) return;
 
         int amount = UnityEngine.Random.Range(minAmmoAmount, maxAmmoAmount + 1);
-        GameObject drop = Instantiate(ammoDropPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+        GameObject drop = LootMotion.Drop(ammoDropPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
 
         AmmoPickup pickup = drop.GetComponent<AmmoPickup>();
         if (pickup != null)
@@ -161,3 +161,4 @@ public class Enemy : MonoBehaviour
         Destroy(gameObject);
     }
 }
+

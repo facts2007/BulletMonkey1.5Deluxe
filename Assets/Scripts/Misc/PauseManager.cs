@@ -7,6 +7,7 @@ public class PauseManager : MonoBehaviour
 {
     [Header("UI References")]
     public GameObject pausePanel;
+    public GameObject pauseTitle;
     public Image escIcon;
     public TMP_Text escText;
 
@@ -109,6 +110,7 @@ public class PauseManager : MonoBehaviour
     public void OpenSettings()
     {
         if (settingsPanel == null) return;
+        if(pauseTitle!=null)pauseTitle.SetActive(false);
         SetMenuButtonsVisible(false);
         settingsPanel.SetActive(true);
     }
@@ -116,6 +118,7 @@ public class PauseManager : MonoBehaviour
     public void CloseSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if(pauseTitle!=null)pauseTitle.SetActive(true);
         SetMenuButtonsVisible(true);
         PlayerPrefs.Save();
     }
@@ -173,3 +176,4 @@ public class PauseManager : MonoBehaviour
         Cursor.visible = true;
     }
 }
+

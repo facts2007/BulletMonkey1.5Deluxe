@@ -22,7 +22,7 @@ public class SuperBananaPickup : MonoBehaviour
 
     private void Update()
     {
-        if (visual == null) return;
+        if (visual == null || GetComponent<LootMotion>()!=null) return;
         visual.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.World);
         visual.localPosition = visualStart + Vector3.up * (Mathf.Sin(Time.time * 3f) * bobHeight);
     }
@@ -32,10 +32,11 @@ public class SuperBananaPickup : MonoBehaviour
 
     private void TryCollect(Collider other)
     {
-        if (collected || Time.timeScale <= 0f) return;
+        if (collected || Time.timeScale <= 0f || (GetComponent<LootMotion>()!=null && GetComponent<LootMotion>().IsFlying)) return;
         SuperShootAbility ability = other.GetComponentInParent<SuperShootAbility>();
         if (ability == null || !ability.isActiveAndEnabled || !ability.TryCollectBanana()) return;
         collected = true;
         Destroy(gameObject);
     }
 }
+

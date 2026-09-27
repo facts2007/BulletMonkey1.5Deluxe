@@ -6,7 +6,17 @@ public class GameAudio : MonoBehaviour
     public static GameAudio Instance { get; private set; }
     [Header("Sound effects — optional until your recordings are ready")]
     public AudioClip shoot;
+    [Header("Quick multi-kill cheer")]
+    public AudioClip playerCheer;
+    public CheerPopup cheerPopup;
+    [Min(.1f)] public float multiKillWindow=2;
+    [Min(0)] public float cheerCooldown=4;
+    [Range(0,1)] public float cheerGain=.65f;
+    private float lastKill=-100,nextCheer;
+    private int killChain;
+    private AudioSource cheerSource;
     public AudioClip enemyNoscope;
+    public AudioClip enemyNoscopeHit;
     public AudioClip shopMusic;
     public AudioClip enemyExplode;
     public AudioClip enemyStomped;
@@ -34,7 +44,8 @@ public class GameAudio : MonoBehaviour
     private AudioSource angryMonkeySource;
     private AudioSource[] voices;
     private int nextVoice;
-    private bool paused;
+    private bool paused, shopOpen, minibossActive;
+    private AudioSource minibossSource;
     private float cinematicMusicGain = 1f;
     public void SetCinematicMusicDucked(bool ducked) { cinematicMusicGain = ducked ? 0f : 1f; ApplyVolumes(); }
 
@@ -43,7 +54,9 @@ public class GameAudio : MonoBehaviour
         Instance = this;
         MusicVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("BM.MusicVolume", defaultMusicVolume));
         SfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("BM.SfxVolume", defaultSfxVolume));
+        cheerSource = MakeSource(false);
         mainMusicSource = MakeSource(true);
+        minibossSource = MakeSource(true);
         shopMusicSource = MakeSource(true);
         pauseMusicSource = MakeSource(true);
         angryMonkeySource = MakeSource(true);
@@ -92,16 +105,18 @@ public class GameAudio : MonoBehaviour
         if (paused)
         {
             mainMusicSource.Pause();
+            minibossSource.Pause();
             if (pauseMusicSource.clip != null) pauseMusicSource.Play();
             foreach (AudioSource voice in voices) voice.Pause();
-            angryMonkeySource.Pause();
+            angryMonkeySource.Pause();cheerSource.Pause();
         }
         else
         {
             pauseMusicSource.Stop();
-            mainMusicSource.UnPause();
+            if(!minibossActive && !shopOpen)mainMusicSource.UnPause();
+            if(minibossActive)minibossSource.UnPause();
             foreach (AudioSource voice in voices) voice.UnPause();
-            angryMonkeySource.UnPause();
+            angryMonkeySource.UnPause();cheerSource.UnPause();
         }
     }
 
@@ -131,20 +146,50 @@ public class GameAudio : MonoBehaviour
 
     private void ApplyVolumes()
     {
+        if (minibossSource != null) minibossSource.volume = MusicVolume * cinematicMusicGain;
         if (shopMusicSource != null) shopMusicSource.volume = MusicVolume;
         if (mainMusicSource != null) mainMusicSource.volume = MusicVolume * cinematicMusicGain;
         if (pauseMusicSource != null) pauseMusicSource.volume = MusicVolume;
         if (voices != null) foreach (AudioSource voice in voices) voice.volume = SfxVolume;
         if (angryMonkeySource != null) angryMonkeySource.volume = SfxVolume;
+        if (cheerSource != null) cheerSource.volume = SfxVolume*cheerGain;
     }
 
     public void SetShopOpen(bool open)
     {
+        shopOpen=open;
         if(open){mainMusicSource.Pause();shopMusicSource.clip=shopMusic;if(shopMusic!=null)shopMusicSource.Play();}
-        else {shopMusicSource.Stop();mainMusicSource.UnPause();}
+        else {shopMusicSource.Stop();if(!paused && !minibossActive)mainMusicSource.UnPause();}
+    }
+    public void RegisterPlayerKill()
+    {
+        if(paused || BossFusionEncounter.IsCutsceneActive)return;
+        killChain=Time.time-lastKill<=multiKillWindow?killChain+1:1;lastKill=Time.time;
+        if(killChain<2 || Time.time<nextCheer || (playerCheer==null && cheerPopup==null) || cheerSource.isPlaying)return;
+        cheerSource.volume=SfxVolume*cheerGain;cheerSource.clip=playerCheer;if(playerCheer!=null)cheerSource.Play();
+        if(cheerPopup!=null)cheerPopup.Show();
+        nextCheer=Time.time+Mathf.Max(cheerCooldown,playerCheer!=null?playerCheer.length:0);killChain=0;
+    }
+    public bool BeginMinibossMusic(AudioClip clip)
+    {
+        if(clip==null || minibossActive)return false;
+        minibossActive=true;mainMusicSource.Pause();
+        minibossSource.clip=clip;minibossSource.Play();if(paused)minibossSource.Pause();
+        return true;
+    }
+    public void EndMinibossMusic()
+    {
+        if(!minibossActive)return;
+        minibossActive=false;minibossSource.Stop();
+        // UnPause preserves the gameplay track's exact playback position.
+        if(!paused && !shopOpen)mainMusicSource.UnPause();
     }
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;
     }
 }
+
+
+
+

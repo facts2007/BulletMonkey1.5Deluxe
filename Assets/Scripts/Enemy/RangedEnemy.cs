@@ -33,7 +33,8 @@ public class RangedEnemy : MonoBehaviour
     [Header("Animation")]
     public CharacterAnimationDriver characterAnimation;
 
-    private float fireTimer;
+    private float fireTimer, nextPathUpdate;
+    private Vector3 lastDestination;
     private EnemyHealth enemyHealth;
     private NavMeshAgent agent;
     private void Awake(){enemyHealth=GetComponent<EnemyHealth>();agent=GetComponent<NavMeshAgent>();}
@@ -79,7 +80,7 @@ public class RangedEnemy : MonoBehaviour
 
         if (distance > detectionRange)
         {
-            agent.ResetPath();
+            if(agent.hasPath)agent.ResetPath();
             return;
         }
 
@@ -96,7 +97,7 @@ public class RangedEnemy : MonoBehaviour
         }
         else
         {
-            agent.ResetPath();
+            if(agent.hasPath)agent.ResetPath();
             HandleFiring();
         }
     }
@@ -114,9 +115,15 @@ public class RangedEnemy : MonoBehaviour
 
     private void ChasePlayer()
     {
-        agent.SetDestination(player.position);
+        UpdateDestination(player.position);
     }
 
+    private void UpdateDestination(Vector3 target)
+    {
+        if(Time.time<nextPathUpdate)return;
+        nextPathUpdate=Time.time+.25f;
+        if(!agent.hasPath || (lastDestination-target).sqrMagnitude>.25f){lastDestination=target;agent.SetDestination(target);}
+    }
     private void FaceTarget()
     {
         Vector3 direction = player.position - transform.position;
@@ -136,7 +143,7 @@ public class RangedEnemy : MonoBehaviour
         NavMeshHit navHit;
         if (NavMesh.SamplePosition(retreatTarget, out navHit, retreatRange, NavMesh.AllAreas))
         {
-            agent.SetDestination(navHit.position);
+            UpdateDestination(navHit.position);
         }
     }
 
@@ -195,6 +202,7 @@ public class RangedEnemy : MonoBehaviour
 
         projectile.damage = noscope ? Mathf.RoundToInt(projectileDamage*noscopeDamageMultiplier) : projectileDamage;
         projectile.direction = direction;
+        projectile.isNoscope = noscope;
     }
 
     private void OnDrawGizmosSelected()

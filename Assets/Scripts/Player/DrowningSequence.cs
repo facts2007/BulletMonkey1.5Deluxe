@@ -51,7 +51,7 @@ public class DrowningSequence : MonoBehaviour
     }
     public void Begin(PlayerHealth player)
     {
-        if(IsRunning || player==null || player.currentHealth<=0 || !player.gameObject.activeInHierarchy)return;
+        if(BossFusionEncounter.IsCutsceneActive || IsRunning || player==null || player.currentHealth<=0 || !player.gameObject.activeInHierarchy)return;
         IsRunning=true;
         if(GameAudio.Instance!=null)GameAudio.Instance.SetCinematicMusicDucked(true);
         StartCoroutine(Sequence(player));

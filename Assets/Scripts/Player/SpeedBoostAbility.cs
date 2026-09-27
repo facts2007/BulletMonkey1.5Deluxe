@@ -14,6 +14,10 @@ public class SpeedBoostAbility : MonoBehaviour
     public float CurrentMultiplier => IsActive ? speedMultiplier : 1f;
     public float RemainingSeconds => remaining;
     private float remaining;
+    [Min(0)] public int storedBananas;
+    public TMP_Text inventoryText;
+    public void Collect(){storedBananas++;RefreshPresentation();}
+    public bool UseStored(){if(storedBananas<=0 || Time.timeScale<=0 || !isActiveAndEnabled || BossFusionEncounter.IsCutsceneActive)return false;var movement=GetComponent<PlayerMovement>();if(movement!=null&&!movement.enabled)return false;storedBananas--;Activate();return true;}
 
     public void Activate()
     {
@@ -26,6 +30,7 @@ public class SpeedBoostAbility : MonoBehaviour
     private void Update()
     {
         if (Time.timeScale <= 0f) return;
+        if(Input.GetKeyDown(KeyCode.R))UseStored();
         Tick(Time.deltaTime);
     }
 
@@ -48,6 +53,7 @@ public class SpeedBoostAbility : MonoBehaviour
 
     private void RefreshPresentation()
     {
+        if(inventoryText!=null)inventoryText.text="[R]  x"+storedBananas;
         if (hud != null) hud.SetActive(IsActive);
         if (statusText != null) statusText.text = $"COCEY BANAN  ×{speedMultiplier:0.#}  ·  {remaining:0.0}s";
         if (screenTint != null)
@@ -58,3 +64,4 @@ public class SpeedBoostAbility : MonoBehaviour
         }
     }
 }
+

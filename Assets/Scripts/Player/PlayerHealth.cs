@@ -44,6 +44,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
+        if(BossFusionEncounter.IsCutsceneActive)return;
         var rescue=GetComponent<PlayerUnstuck>();if(rescue!=null && rescue.IsRecovering)return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
 

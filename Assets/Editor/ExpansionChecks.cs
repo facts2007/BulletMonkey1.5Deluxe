@@ -27,9 +27,9 @@ public static class ExpansionChecks
         Application.runInBackground=true;
         Check(new[]{"MainMenu","MainScene","DeathScene","VictoryScene"}.All(Application.CanStreamedLevelBeLoaded),"All four scenes loadable");
         var p=UnityEngine.Object.FindFirstObjectByType<PlayerHealth>();var rescue=p.GetComponent<PlayerUnstuck>();
-        int hp=p.currentHealth;rescue.Request();Check(!rescue.IsRecovering&&p.currentHealth==hp,"Unstuck rejects freely moving player without cost");
+        int hp=p.currentHealth;rescue.Request();Check(!rescue.IsRecovering&&p.currentHealth==hp,"First T warns freely moving player without cost");
         typeof(PlayerUnstuck).GetField("lastBlocked",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(rescue,Time.time);
-        rescue.Request();Check(!rescue.IsRecovering&&rescue.prompt.text.Contains("-10 HP"),"First T presents warning without charging");
+        Check(!rescue.IsRecovering&&rescue.prompt.text.Contains("-10 HP"),"First T presents warning without charging");
         rescue.Request();Check(rescue.IsRecovering&&p.currentHealth==hp-10,"Second T charges exactly 10 HP and begins rescue");
         p.TakeDamage(999);Check(p.currentHealth==hp-10,"Rescue protects player during flight");
         float end=Time.time+5;while(rescue.IsRecovering&&Time.time<end)yield return .1;
@@ -59,13 +59,14 @@ public static class ExpansionChecks
         yield return .3;
         Check(WaveArea.AnyWaveActive&&gate.burning&&!gate.TryInteract(),"Active wave ignites Kabu and blocks shop");
         var spawned=UnityEngine.Object.FindObjectsByType<EnemyHealth>(FindObjectsSortMode.None).First(e=>e.name.Contains("Giant"));
-        Check(spawned.maxHealth==boss.GetComponent<EnemyHealth>().maxHealth,"Wave spawns configured boss");spawned.TakeDamage(9999);
+        Check(spawned.maxHealth==Mathf.RoundToInt(boss.GetComponent<EnemyHealth>().maxHealth*(1+(wave.islandNumber-1)*wave.healthIncreasePerIsland)),"Wave spawns configured boss");spawned.TakeDamage(9999);
         end=Time.time+3;while(!wave.waveComplete&&Time.time<end)yield return .1;
-        Check(wave.waveComplete&&!WaveArea.AnyWaveActive&&inventory.buckets==before+1,"Cleared wave awards one bucket and releases shop lock");
+        Check(wave.waveComplete&&!WaveArea.AnyWaveActive&&inventory.buckets==before,"Cleared island releases shop lock without automatic bucket credit");
+        var pickup=UnityEngine.Object.FindFirstObjectByType<WaterBucketPickup>();Check(pickup!=null,"Cleared island spawns physical bucket");pickup.SendMessage("OnTriggerEnter",p.GetComponent<Collider>());
         gate.TryInteract();Check(!gate.burning&&inventory.buckets==before&&gate.TryInteract(),"Bucket extinguishes Kabu and unlocks shop");
         var shop=gate.GetComponent<ShopManager>();typeof(ShopManager).GetMethod("OpenShop",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(shop,null);
         Check(Time.timeScale==0&&shop.shopPanel.activeSelf,"Shop still opens upgrades and pauses gameplay");shop.CloseShop();Check(Time.timeScale==1,"Closing shop restores time");
-        var camera=p.GetComponentInChildren<Camera>();Check(camera.targetTexture!=null&&camera.targetTexture.height==240&&camera.targetTexture.filterMode==FilterMode.Point,"Retro camera renders point-filtered 240-line image");
+        var camera=p.GetComponentInChildren<Camera>();Check(camera.targetTexture!=null&&camera.targetTexture.height==400&&camera.targetTexture.filterMode==FilterMode.Point,"Retro camera renders point-filtered 400-line image");
         Check(p.healthText.font.name.Contains("Electronic"),"HUD uses retro font");
         // Verify the real scene routes, including loading out of a paused game.
         Time.timeScale=0;p.Die();yield return 1;
@@ -85,3 +86,4 @@ public static class ExpansionChecks
         results.Add("COMPLETE");
     }
 }
+

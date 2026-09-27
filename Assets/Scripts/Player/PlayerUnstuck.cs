@@ -27,15 +27,15 @@ public class PlayerUnstuck : MonoBehaviour
         blockedFor=trying && delta.magnitude<Time.deltaTime*.15f ? blockedFor+Time.deltaTime:0;
         if(blockedFor>=blockedSeconds)lastBlocked=Time.time;
         if(Input.GetKeyDown(KeyCode.T))Request();
-        if(prompt!=null && Time.time>messageUntil)prompt.gameObject.SetActive(false);
+        if(prompt!=null && Time.time>messageUntil){prompt.text="[T] unstuck?";prompt.gameObject.SetActive(true);}
     }
     public void Request()
     {
         if(IsRecovering || !movement.enabled || Time.timeScale<=0)return;
-        if(!IsStuck){Show("Not stuck! Hold movement against the obstacle first.");return;}
+
         if(health.currentHealth<=healthCost){Show("Unstuck needs more than "+healthCost+" HP.");return;}
         if(Time.time<confirmUntil){confirmUntil=0;StartCoroutine(Recover());return;}
-        confirmUntil=Time.time+4;Show("Are you sure u wanna unstuck? -10 HP   [T] confirm");
+        confirmUntil=Time.time+4;Show("Unstuck?  -10 HP  [T] confirm");
     }
     private void Show(string text){if(prompt!=null){prompt.text=text;prompt.gameObject.SetActive(true);}messageUntil=Time.time+4;}
     public bool FindDestination(out Vector3 destination)
@@ -64,12 +64,13 @@ public class PlayerUnstuck : MonoBehaviour
         var copy=Instantiate(visual.gameObject,visual.position,visual.rotation);copy.transform.localScale=visual.lossyScale;
         foreach(var a in copy.GetComponentsInChildren<Animator>())a.enabled=false;
         var rag=copy.AddComponent<HeavenlyRagdoll>();rag.haloMaterial=haloMaterial;rag.Flop();visual.gameObject.SetActive(false);
-        yield return new WaitForSeconds(.4f);
+        yield return new WaitForSeconds(.8f);
         Vector3 start=transform.position;rag.PrepareHelicopter();
+        for(float tilt=0;tilt<.4f;tilt+=Time.deltaTime){rag.HelicopterPose(Vector3.zero,0,65*Mathf.SmoothStep(0,1,tilt/.4f));yield return null;}
         for(float t=0;t<flightSeconds;t+=Time.deltaTime)
         {
             float f=Mathf.Clamp01(t/flightSeconds);Vector3 p=Vector3.Lerp(start,destination,Mathf.SmoothStep(0,1,f))+Vector3.up*Mathf.Sin(f*Mathf.PI)*6;
-            rag.HelicopterPose(p-start,720*f);transform.position=p;yield return null;
+            rag.HelicopterPose(p-start,1080*f,65);transform.position=p;yield return null;
         }
         transform.position=destination+Vector3.up*.15f;rag.HidePuppet();Destroy(copy);visual.gameObject.SetActive(true);
         cc.enabled=true;movement.ResetAfterRecovery();foreach(var b in disabled)if(b!=null)b.enabled=true;

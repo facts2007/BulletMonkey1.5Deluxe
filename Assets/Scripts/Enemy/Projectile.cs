@@ -6,6 +6,8 @@ public class Projectile : MonoBehaviour
     public int damage = 10;
     public Vector3 direction;
     public float lifeTime = 5f;
+    public bool isNoscope;
+    private bool hit;
 
     private void Start()
     {
@@ -19,10 +21,15 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if(hit)return;
         PlayerHealth playerHealth = other.GetComponentInParent<PlayerHealth>();
         if (playerHealth != null)
         {
+            hit=true;
+            int previous=playerHealth.currentHealth;
             playerHealth.TakeDamage(damage);
+            if(isNoscope && playerHealth!=null && playerHealth.currentHealth<previous && GameAudio.Instance!=null)
+                GameAudio.Instance.PlayEffect(GameAudio.Instance.enemyNoscopeHit);
             Destroy(gameObject);
             return;
         }

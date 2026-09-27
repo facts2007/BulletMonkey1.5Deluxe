@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2673585431138959904}
   - component: {fileID: 2441649057409719522}
   - component: {fileID: 7719223307557149813}
+  - component: {fileID: 6901035596414793005}
   m_Layer: 0
   m_Name: SuperBananaPickup
   m_TagString: Untagged
@@ -99,6 +100,24 @@ MonoBehaviour:
   spinSpeed: 90
   bobHeight: 0.12
   lifetime: 90
+--- !u!114 &6901035596414793005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2403087099593571312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf176d4ced02f9d48bdeb82309f134d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LootMotion
+  visual: {fileID: 438376272672977035}
+  visualPrefab: {fileID: 0}
+  spinSpeed: 100
+  flightSeconds: 0.75
+  jumpHeight: 1.8
+  scatterRadius: 1.4
 --- !u!1001 &4726689780109813322
 PrefabInstance:
   m_ObjectHideFlags: 0

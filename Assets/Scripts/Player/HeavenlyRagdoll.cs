@@ -41,9 +41,9 @@ public class HeavenlyRagdoll : MonoBehaviour
         helicopterPivot=bodies["root.x"].position;
         foreach(var body in bodies.Values){helicopterPose[body]=new Pose(body.position,body.rotation);body.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;body.isKinematic=true;}
     }
-    public void HelicopterPose(Vector3 offset,float yaw)
+    public void HelicopterPose(Vector3 offset,float yaw,float tilt=0)
     {
-        Quaternion spin=Quaternion.Euler(0,yaw,0);
+        Quaternion spin=Quaternion.Euler(0,yaw,0)*Quaternion.Euler(tilt,0,0);
         foreach(var entry in helicopterPose){entry.Key.position=helicopterPivot+offset+spin*(entry.Value.position-helicopterPivot);entry.Key.rotation=spin*entry.Value.rotation;}
     }
     public void HidePuppet(){if(puppet!=null)puppet.SetActive(false);}

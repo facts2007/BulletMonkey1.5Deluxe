@@ -25,6 +25,10 @@ public class EnemyHealth : MonoBehaviour
     private float targetRedScale = 1f;
     private Coroutine redBarRoutine;
     public bool IsDead { get; private set; }
+    public void SetFullHealth(int value)
+    {
+        maxHealth=Mathf.Max(1,value);currentHealth=maxHealth;targetHealthScale=targetRedScale=1;UpdateText();
+    }
 
     private void Awake()
     {
@@ -47,6 +51,7 @@ public class EnemyHealth : MonoBehaviour
         if (bar == null) return;
 
         Vector3 scale = bar.localScale;
+        if(Mathf.Abs(scale.x-target)<.001f)return;
         scale.x = Mathf.Lerp(scale.x, target, speed * Time.deltaTime);
         bar.localScale = scale;
     }
@@ -69,6 +74,7 @@ public class EnemyHealth : MonoBehaviour
 
         if (currentHealth <= 0)
         {
+            if(GameAudio.Instance!=null)GameAudio.Instance.RegisterPlayerKill();
             Die(stomp);
         }
         else if (GameAudio.Instance != null)
@@ -120,3 +126,4 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 }
+
