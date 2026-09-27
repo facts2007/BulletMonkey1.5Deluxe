@@ -274,22 +274,22 @@ public static class CombatPresentationChecks
 
         // Isolate the two sound slots using a silent temporary clip and the voice cursor.
         GameAudio audio = pause.gameAudio;
-        AudioClip savedDamage = audio.enemyDamaged, savedStomp = audio.enemyStomped;
+        AudioClip savedDamage = audio.enemyStompDamaged, savedStomp = audio.enemyStomped;
         AudioClip silent = AudioClip.Create("Temporary stomp sound check", 2205, 1, 22050, false);
         FieldInfo cursor = typeof(GameAudio).GetField("nextVoice", BindingFlags.Instance | BindingFlags.NonPublic);
-        audio.enemyDamaged = null; audio.enemyStomped = silent;
+        audio.enemyStompDamaged = null; audio.enemyStomped = silent;
         var soundVictim = UnityEngine.Object.Instantiate(meleePrefab, ability.transform.position + Vector3.left * 4f, Quaternion.identity);
         FreezeEnemy(soundVictim);
         var soundEnemy = soundVictim.GetComponent<Enemy>();
         int beforeSound = (int)cursor.GetValue(audio);
         soundEnemy.Stomp(25);
         Check((int)cursor.GetValue(audio) == beforeSound, "Nonlethal stomp does not play final-stomp sound");
-        audio.enemyDamaged = silent;
+        audio.enemyStompDamaged = silent;
         soundEnemy.Stomp(25);
         Check((int)cursor.GetValue(audio) == (beforeSound + 1) % 24, "Nonlethal stomp plays separate damage sound");
         soundEnemy.Stomp(50);
         Check((int)cursor.GetValue(audio) == (beforeSound + 2) % 24, "Lethal stomp plays exactly one final-stomp sound");
-        audio.enemyDamaged = savedDamage; audio.enemyStomped = savedStomp;
+        audio.enemyStompDamaged = savedDamage; audio.enemyStomped = savedStomp;
         UnityEngine.Object.Destroy(silent);
 
         ShootCameraShake shake = gun.cameraShake;

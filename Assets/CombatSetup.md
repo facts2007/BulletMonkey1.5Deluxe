@@ -7,12 +7,13 @@ health bars, and wave logic remain in their original scripts.
 
 ## Add your recordings
 
-Select **Game Audio - assign sound clips here** in MainScene. In its **Game Audio**
+Select **Game Audio** in MainScene. In its **Game Audio**
 component, drag AudioClips into:
 
 - **Shoot**: regular player and ranged-enemy shots.
 - **Enemy Explode**: ordinary enemy deaths.
-- **Enemy Damaged**: surviving hits, including nonlethal stomps.
+- **Enemy Damaged**: surviving bullet/ordinary hits only. This independent slot starts empty.
+- **Enemy Stomp Damaged**: nonlethal stomp impact (existing clang/thud clip).
 - **Enemy Stomped**: the final, lethal stomp only.
 - **Super Shoot**: a single exaggerated shot, played repeatedly during the stream.
 - **Angry Monkey**: a loop played while the Cocey banan speed boost is active.
@@ -80,3 +81,66 @@ to discard the test setup. Results are written to `Temp/CombatChecks/report.txt`
 The editor-only setup command can rewire MainScene and the three gameplay prefabs.
 Do not rerun it after hand-tuning prefab placement or drop chances unless you want
 to restore the setup defaults. It keeps existing generated animation controllers.
+
+
+## Five combat islands
+
+Under **WaveManager**, select **Island1** through **Island5**. These correspond to
+**Combat islands 1–5**, not the starting island. The starting island has no wave.
+
+- **Waves**: change the array Size to set the number of waves; set each entry's
+  **Enemy Count**. Defaults are two waves per island: 4/6, 6/8, 8/10, 10/12, 12/14.
+- **Countdown Seconds**: countdown before each wave (default 3 seconds).
+- **Enemy Prefabs**: random mix; both RoboMonkey and MiniDroid are assigned.
+- **Spawn Interval** and **Spawn Points**: spawn pacing and positions.
+- **Entry trigger** child: a thin box across the entrance. Move/resize its Box
+  Collider for layout changes. Only a player entering the unlocked area starts it.
+- **Mist wall** child: solid exit gate. All waves must finish before it disappears.
+  Clearing an island unlocks the next entry trigger; it does not auto-start it.
+
+Counts belong to spawned enemies on that island. Unrelated kills do not count,
+spawning must finish before completion, and cleared islands cannot restart.
+The previous starting-island blocker is disabled and kept for reference.
+
+`IslandWaveChecks.Run()` in Play mode exercises all five entry triggers, countdowns,
+two-wave progression, gates, unrelated kills, and separate audio routes. Stop Play
+mode afterwards to discard its temporary settings. Report: `Temp/CombatChecks/island-report.txt`.
+
+## Drowning / heavenly box
+
+Select **Drowning — heavenly box** in MainScene and assign your MP3 to **Heavenly
+Voice** on the **Drowning Sequence** component. The subtitle reads: “You have
+drowned my child... May you rest in peace..” You can edit that message, the minimum
+reading time (6 seconds), ragdoll delay (1.2 seconds), white fade (7 seconds), and
+voice gain in the Inspector. A longer voice clip automatically extends the scene.
+The voice follows SFX volume; gameplay music is silent during the heavenly scene.
+
+The water contact volume covers the whole ocean. On contact, controls and the
+normal HUD disappear, the player is teleported to the separate room, and a copy of
+their visual becomes a 15-body physics ragdoll. The original imported model is
+unchanged. After the voice/message and white fade, normal PlayerHealth.Die runs.
+The afterlife camera stays active and offers **Try again [R]** and **Quit game**.
+If the configured Main Menu Scene is later added to the build, the exit button
+automatically becomes **Main menu** instead.
+The short cinematic locks pause input; both exit choices are available afterward.
+
+The room, camera, lights, and water volume are children of **Drowning — heavenly
+box**. The room lives outside the playable map and starts disabled. Existing wall
+placements and island wave settings are untouched by this setup.
+
+`DrowningChecks.Run()` in Play mode tests ocean coverage, real water contact,
+teleportation, control lockout, duplicate suppression, ragdoll stability, voice
+length, whiteout, death, and the ending UI. Stop Play mode to discard test settings.
+Report: `Temp/CombatChecks/drowning-report.txt`.
+
+Choir: assign an MP3/AudioClip to **Heavenly Choir** on Drowning Sequence. It has
+its own **Choir Volume** and **Loop Choir** controls, follows the Music slider,
+and fades out with the whiteout. It plays alongside Heavenly Voice; it does not
+extend the sequence. The monkey gets a glowing halo when ragdoll starts. **Halo
+Height** and **Halo Radius** adjust the ring, which follows the head and stays upright.
+
+Ascension: the monkey ragdolls for **2 seconds**, then rises **5 metres** by its
+torso over the **7-second white fade**. Limbs remain under physics and the halo
+follows the head. Adjust Ragdoll Rest Seconds and Ascent Height on Drowning
+Sequence. A longer voice recording finishes over white before the death choices
+appear; it does not delay the start of the lift.

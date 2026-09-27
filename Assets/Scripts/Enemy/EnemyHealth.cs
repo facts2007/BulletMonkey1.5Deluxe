@@ -73,7 +73,7 @@ public class EnemyHealth : MonoBehaviour
         }
         else if (GameAudio.Instance != null)
         {
-            GameAudio.Instance.PlayEffect(GameAudio.Instance.enemyDamaged);
+            GameAudio.Instance.PlayEffect(stomp ? GameAudio.Instance.enemyStompDamaged : GameAudio.Instance.enemyDamaged);
         }
     }
 

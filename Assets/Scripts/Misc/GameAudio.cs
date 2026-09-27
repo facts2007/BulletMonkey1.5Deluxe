@@ -8,7 +8,10 @@ public class GameAudio : MonoBehaviour
     public AudioClip shoot;
     public AudioClip enemyExplode;
     public AudioClip enemyStomped;
+    [Tooltip("Nonlethal bullet/ordinary damage only.")]
     public AudioClip enemyDamaged;
+    [Tooltip("Nonlethal stomp impact only. Enemy Stomped is the killing stomp.")]
+    public AudioClip enemyStompDamaged;
     public AudioClip superShoot;
     [Tooltip("Looped while Cocey banan is active. Uses the SFX volume slider.")]
     public AudioClip angryMonkey;
@@ -29,6 +32,8 @@ public class GameAudio : MonoBehaviour
     private AudioSource[] voices;
     private int nextVoice;
     private bool paused;
+    private float cinematicMusicGain = 1f;
+    public void SetCinematicMusicDucked(bool ducked) { cinematicMusicGain = ducked ? 0f : 1f; ApplyVolumes(); }
 
     private void Awake()
     {
@@ -122,7 +127,7 @@ public class GameAudio : MonoBehaviour
 
     private void ApplyVolumes()
     {
-        if (mainMusicSource != null) mainMusicSource.volume = MusicVolume;
+        if (mainMusicSource != null) mainMusicSource.volume = MusicVolume * cinematicMusicGain;
         if (pauseMusicSource != null) pauseMusicSource.volume = MusicVolume;
         if (voices != null) foreach (AudioSource voice in voices) voice.volume = SfxVolume;
         if (angryMonkeySource != null) angryMonkeySource.volume = SfxVolume;
