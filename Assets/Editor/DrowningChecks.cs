@@ -64,11 +64,9 @@ public static class DrowningChecks
         Check(torso.position.y>liftStart+.4f,"Torso gradually rises upward");
         Check(bodies.All(b=>!float.IsNaN(b.position.x)&&Vector3.Distance(b.position,torso.position)<4),"Limbs remain attached and stable during ascent");
         yield return 6;
-        Check(sequence.IsFinished && sequence.whiteFade.color.a==1,"Whiteout completes after voice and fade");
-        Check(!choir.isPlaying,"Choir stops when whiteout completes");
-        Check(player.currentHealth==0 && !player.gameObject.activeSelf,"Existing player death runs after whiteout");
-        Check(sequence.deathPanel.activeInHierarchy && Cursor.visible,"Retry/main-menu choices appear with unlocked cursor");
-        Check(Camera.allCameras.Length==1 && Camera.allCameras[0]==sequence.heavenlyCamera,"Death retains a working camera");
+        Check(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name=="DeathScene","Whiteout and player death load DeathScene");
+        Check(choir==null,"Choir source is cleaned up on scene transition");
+        Check(Time.timeScale==1 && Cursor.visible,"DeathScene restores time and menu cursor");
         results.Add("COMPLETE");
     }
 }

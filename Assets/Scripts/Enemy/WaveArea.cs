@@ -11,6 +11,7 @@ public class WaveArea : MonoBehaviour
     public class IslandWave
     {
         [Min(1)] public int enemyCount = 5;
+        public bool bossWave;
     }
 
     [Header("Island waves — add/remove entries to change wave count")]
@@ -34,6 +35,11 @@ public class WaveArea : MonoBehaviour
     public Transform[] spawnPoints;
     public GameObject[] enemyPrefabs;
     [Min(0)] public float spawnInterval = 0.5f;
+    [Header("Boss and breaks")]
+    public GameObject bossPrefab;
+    [Min(0)] public float intermissionSeconds = 12;
+    public bool IsCombatActive {get;private set;}
+    public static bool AnyWaveActive => FindObjectsByType<WaveArea>(FindObjectsSortMode.None).Any(a=>a.IsCombatActive);
     [Header("Exit mist — disabled after every wave is cleared")]
     public GameObject pathBlocker;
     public WaveArea nextArea;
@@ -92,6 +98,7 @@ public class WaveArea : MonoBehaviour
             return;
         }
         waveStarted = true;
+        IsCombatActive = true;
         if (entryTrigger != null) entryTrigger.enabled = false;
         StartCoroutine(RunWaves());
     }
@@ -102,6 +109,8 @@ public class WaveArea : MonoBehaviour
         GameObject[] prefabs = enemyPrefabs.Where(p => p != null && p.GetComponent<EnemyHealth>() != null).ToArray();
         for (int index = 0; index < waves.Length; index++)
         {
+            IsCombatActive=true;
+            foreach(var shop in FindObjectsByType<KabuWaveShop>(FindObjectsSortMode.None))shop.Ignite();
             currentWave = index + 1;
             for (int seconds = countdownSeconds; seconds > 0; seconds--)
             {
@@ -109,11 +118,12 @@ public class WaveArea : MonoBehaviour
                 yield return new WaitForSeconds(1f);
             }
             living.Clear();
-            int count = waves[index].enemyCount;
+            int count = waves[index].bossWave ? 1 : waves[index].enemyCount;
             for (int i = 0; i < count; i++)
             {
                 Transform point = points[UnityEngine.Random.Range(0, points.Length)];
-                GameObject spawned = Instantiate(prefabs[UnityEngine.Random.Range(0, prefabs.Length)], point.position, point.rotation);
+                GameObject source=waves[index].bossWave && bossPrefab!=null ? bossPrefab : prefabs[UnityEngine.Random.Range(0,prefabs.Length)];
+                GameObject spawned = Instantiate(source, point.position, point.rotation);
                 spawned.SetActive(true);
                 living.Add(spawned.GetComponent<EnemyHealth>());
                 UpdateCount(count - i - 1);
@@ -125,6 +135,13 @@ public class WaveArea : MonoBehaviour
                 UpdateCount(0);
                 yield return null;
             } while (enemiesRemaining > 0);
+            IsCombatActive=false;
+            var bucket=FindFirstObjectByType<PlayerBucketInventory>();if(bucket!=null)bucket.AddBucket();
+            if(index<waves.Length-1)
+            {
+                SetText(islandName+" · Wave cleared! +1 bucket · Shop break");
+                yield return new WaitForSeconds(intermissionSeconds);
+            }
         }
         waveComplete = true;
         if (pathBlocker != null) pathBlocker.SetActive(false);

@@ -46,7 +46,7 @@ public static class IslandWaveChecks
         Check(areas.Length==5,"Five combat islands configured");
         Check(areas.All(a=>!a.waveStarted && a.pathBlocker.activeSelf),"No wave autostarts; all exit gates closed");
         Check(areas[0].IsUnlocked && areas.Skip(1).All(a=>!a.IsUnlocked),"Only first island entry unlocked");
-        foreach(var a in areas){a.waves=new[]{new WaveArea.IslandWave{enemyCount=2},new WaveArea.IslandWave{enemyCount=1}};a.countdownSeconds=1;a.spawnInterval=.1f;}
+        foreach(var a in areas){a.waves=new[]{new WaveArea.IslandWave{enemyCount=2},new WaveArea.IslandWave{enemyCount=1}};a.countdownSeconds=1;a.spawnInterval=.1f;a.intermissionSeconds=0;}
         foreach(var e in UnityEngine.Object.FindObjectsByType<Enemy>(FindObjectsSortMode.None)) Freeze(e);
         Collider playerCollider=player.GetComponent<Collider>();
         areas[1].TryEnter(playerCollider);
@@ -109,5 +109,3 @@ public static class IslandWaveChecks
         e.dropChance=0;e.ammoDropChance=0;e.superBananaDropChance=0;e.coceyBananaDropChance=0;
     }
 }
-
-

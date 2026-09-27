@@ -33,6 +33,7 @@ public class PlayerMovement : MonoBehaviour
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
     private bool stompAvailable = true;
+    public void ResetAfterRecovery(){velocity=Vector3.zero;currentVelocity=Vector3.zero;}
 
     private void Awake()
     {

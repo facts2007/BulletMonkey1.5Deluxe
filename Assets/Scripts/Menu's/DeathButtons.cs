@@ -8,11 +8,11 @@ public class DeathButtons : MonoBehaviour
 
     public void Retry()
     {
-        SceneManager.LoadScene(mainSceneName);
+        GameSceneFlow.Load(mainSceneName);
     }
 
     public void BackToMainMenu()
     {
-        SceneManager.LoadScene(mainMenuName);
+        GameSceneFlow.Load(mainMenuName);
     }
 }

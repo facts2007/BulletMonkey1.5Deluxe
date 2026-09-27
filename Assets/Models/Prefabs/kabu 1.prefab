@@ -1,0 +1,151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1188543434385091390
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.8800001
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.8800001
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.8800001
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -17.796255
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 15.503706
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -18.655563
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9419711
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.33569402
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 39.229
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_Name
+      value: kabu 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 516ca70731cc3854295cbd80f7922ccf, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6361044414961697379}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3270363545702335178}
+  m_SourcePrefab: {fileID: 100100000, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+--- !u!1 &2071625202028533359 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+  m_PrefabInstance: {fileID: 1188543434385091390}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6361044414961697379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071625202028533359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ad49f9bec367f149932e6536abeedc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopManager
+  player: {fileID: 0}
+  playerHealth: {fileID: 0}
+  playerGun: {fileID: 0}
+  interactionRange: 3.5
+  interactKey: 101
+  interactionPrompt: {fileID: 0}
+  shopPanel: {fileID: 0}
+  healthCostLevel1: 0
+  healthCostLevel2: 0
+  healthCostLevel3: 0
+  healthIncreaseLevel1: 20
+  healthIncreaseLevel2: 25
+  healthIncreaseLevel3: 30
+  fireRateCostLevel1: 0
+  fireRateCostLevel2: 0
+  fireRateCostLevel3: 0
+  fireRateIncreaseLevel1: 2
+  fireRateIncreaseLevel2: 3
+  fireRateIncreaseLevel3: 4
+  maxAmmoCostLevel1: 0
+  maxAmmoCostLevel2: 0
+  maxAmmoCostLevel3: 0
+  maxAmmoIncreaseLevel1: 10
+  maxAmmoIncreaseLevel2: 15
+  maxAmmoIncreaseLevel3: 20
+  healthUpgradeButtonText: {fileID: 0}
+  fireRateUpgradeButtonText: {fileID: 0}
+  maxAmmoUpgradeButtonText: {fileID: 0}
+--- !u!114 &3270363545702335178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071625202028533359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f533b25d0f10bd43825dc8c21c36234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopkeeperIdle
+  animator: {fileID: 4689399900472202927}
+  idleVariationTriggers: []
+  minTimeBetweenVariations: 5
+  maxTimeBetweenVariations: 12
+--- !u!95 &4689399900472202927 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 99333d4a8fb7e394dbfe6a7ba4fbd69a, type: 3}
+  m_PrefabInstance: {fileID: 1188543434385091390}
+  m_PrefabAsset: {fileID: 0}

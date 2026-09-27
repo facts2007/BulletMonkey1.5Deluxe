@@ -4,13 +4,13 @@ using UnityEngine.SceneManagement;
 public class ModelSceneLoader : MonoBehaviour
 {
     [Header("Target Scene")]
-    public string targetSceneName = "NextScene";
+    public string targetSceneName = "VictoryScene";
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.GetComponentInParent<PlayerHealth>() != null)
         {
-            SceneManager.LoadScene(targetSceneName);
+            GameSceneFlow.Load(targetSceneName);
         }
     }
 }

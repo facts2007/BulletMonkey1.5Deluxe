@@ -93,7 +93,7 @@ public class PauseManager : MonoBehaviour
         GameIsPaused = false;
         Time.timeScale = 1f;
 
-        SceneManager.LoadScene(mainMenuSceneName);
+        GameSceneFlow.Load(mainMenuSceneName);
     }
 
     public void QuitGame()

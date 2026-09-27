@@ -92,6 +92,7 @@ public class ShopManager : MonoBehaviour
     private void Update()
     {
         if (player == null) return;
+        if(PauseManager.GameIsPaused)return;
 
         float distance = Vector3.Distance(transform.position, player.position);
         playerInRange = distance <= interactionRange;
@@ -120,7 +121,10 @@ public class ShopManager : MonoBehaviour
 
     private void OpenShop()
     {
+        var gate=GetComponent<KabuWaveShop>();
+        if(gate!=null && !gate.TryInteract())return;
         shopOpen = true;
+        if(GameAudio.Instance!=null)GameAudio.Instance.SetShopOpen(true);
 
         if (shopPanel != null) shopPanel.SetActive(true);
         if (interactionPrompt != null) interactionPrompt.SetActive(false);
@@ -138,6 +142,7 @@ public class ShopManager : MonoBehaviour
     public void CloseShop()
     {
         shopOpen = false;
+        if(GameAudio.Instance!=null)GameAudio.Instance.SetShopOpen(false);
 
         if (shopPanel != null) shopPanel.SetActive(false);
 

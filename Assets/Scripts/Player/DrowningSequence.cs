@@ -108,9 +108,9 @@ public class DrowningSequence : MonoBehaviour
         float remainingMessage=Mathf.Max(minimumMessageSeconds,heavenlyVoice!=null?heavenlyVoice.length+.4f:0)
             -elapsed-ragdollRestSeconds-whiteFadeSeconds;
         if(remainingMessage>0)yield return new WaitForSeconds(remainingMessage);
+        IsFinished=true;
         player.currentHealth=0;player.Die();
-        IsFinished=true;deathPanel.SetActive(true);
-        Cursor.lockState=CursorLockMode.None;Cursor.visible=true;
+        yield break;
     }
     private void Update()
     {
@@ -140,6 +140,3 @@ public class DrowningSequence : MonoBehaviour
 #endif
     }
 }
-
-
-

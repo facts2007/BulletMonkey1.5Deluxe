@@ -119,9 +119,8 @@ The water contact volume covers the whole ocean. On contact, controls and the
 normal HUD disappear, the player is teleported to the separate room, and a copy of
 their visual becomes a 15-body physics ragdoll. The original imported model is
 unchanged. After the voice/message and white fade, normal PlayerHealth.Die runs.
-The afterlife camera stays active and offers **Try again [R]** and **Quit game**.
-If the configured Main Menu Scene is later added to the build, the exit button
-automatically becomes **Main menu** instead.
+After the ascent and whiteout, the game now loads **DeathScene**, with Retry and Back to Main Menu.
+The new scene flow is documented in `Assets/ExpansionSetup.md`.
 The short cinematic locks pause input; both exit choices are available afterward.
 
 The room, camera, lights, and water volume are children of **Drowning — heavenly

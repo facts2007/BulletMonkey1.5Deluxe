@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 
 [RequireComponent(typeof(EnemyHealth))]
 [RequireComponent(typeof(NavMeshAgent))]
@@ -11,6 +12,15 @@ public class RangedEnemy : MonoBehaviour
     public float fireRate = 2f;
     public int projectileDamage = 10;
     public float aimHeightOffset = 0f;
+    [Header("Jumping 360 noscope")]
+    [Range(0,1)] public float noscopeChance = .1f;
+    [Min(1)] public float noscopeDamageMultiplier = 2;
+    public float noscopeJumpHeight = 1.5f;
+    public float noscopeSeconds = .8f;
+    private bool trickShotActive;
+    private Transform trickVisual;
+    private Vector3 visualStart;
+    private Quaternion visualRotation;
 
     [Header("Range")]
     public float detectionRange = 12f;
@@ -26,6 +36,7 @@ public class RangedEnemy : MonoBehaviour
     private float fireTimer;
     private EnemyHealth enemyHealth;
     private NavMeshAgent agent;
+    private void Awake(){enemyHealth=GetComponent<EnemyHealth>();agent=GetComponent<NavMeshAgent>();}
 
     private void Start()
     {
@@ -62,6 +73,7 @@ public class RangedEnemy : MonoBehaviour
         if (Time.timeScale <= 0f || agent == null || !agent.isOnNavMesh) return;
         if (player == null) return;
         if (enemyHealth != null && enemyHealth.currentHealth <= 0) return;
+        if (trickShotActive) return;
 
         float distance = Vector3.Distance(transform.position, player.position);
 
@@ -94,7 +106,8 @@ public class RangedEnemy : MonoBehaviour
         fireTimer += Time.deltaTime;
         if (fireTimer >= fireRate)
         {
-            Shoot();
+            if (Random.value < noscopeChance) StartCoroutine(JumpingNoscope());
+            else Shoot();
             fireTimer = 0f;
         }
     }
@@ -129,22 +142,58 @@ public class RangedEnemy : MonoBehaviour
 
     private void Shoot()
     {
-        if (projectilePrefab == null || firePoint == null) return;
+        FireProjectile(false);
+    }
+    private IEnumerator JumpingNoscope()
+    {
+        trickShotActive=true;
+        trickVisual=characterAnimation!=null && characterAnimation.animator!=null ? characterAnimation.animator.transform : null;
+        if(trickVisual==null){FireProjectile(true);trickShotActive=false;yield break;}
+        visualStart=trickVisual.localPosition;visualRotation=trickVisual.localRotation;
+        if(agent!=null && agent.isOnNavMesh)agent.ResetPath();
+        float duration=Mathf.Max(.1f,noscopeSeconds);
+        bool fired=false;
+        for(float t=0;t<duration;t+=Time.deltaTime)
+        {
+            if(enemyHealth.IsDead)break;
+            float f=t/duration;
+            trickVisual.localPosition=visualStart+Vector3.up*Mathf.Sin(f*Mathf.PI)*noscopeJumpHeight;
+            trickVisual.localRotation=visualRotation*Quaternion.Euler(0,360*f,0);
+            if(!fired && f>=.65f){FireProjectile(true);fired=true;}
+            yield return null;
+        }
+        ResetTrickVisual();
+    }
+    private void ResetTrickVisual()
+    {
+        if(trickVisual!=null && trickShotActive){trickVisual.localPosition=visualStart;trickVisual.localRotation=visualRotation;}
+        trickShotActive=false;
+    }
+    private void OnDisable(){StopAllCoroutines();ResetTrickVisual();}
+    private void FireProjectile(bool noscope)
+    {
+        if (projectilePrefab == null || firePoint == null || player == null) return;
 
         if (characterAnimation != null) characterAnimation.NotifyShot();
-        if (GameAudio.Instance != null) GameAudio.Instance.PlayShot(false);
+        if (GameAudio.Instance != null)
+        {
+            if(noscope)GameAudio.Instance.PlayEffect(GameAudio.Instance.enemyNoscope);
+            else GameAudio.Instance.PlayShot(false);
+        }
 
         Vector3 targetPoint = player.position + Vector3.up * aimHeightOffset;
         Vector3 direction = (targetPoint - firePoint.position).normalized;
 
-        GameObject projectileObject = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
+        Vector3 shotPosition=firePoint.position+(noscope?Vector3.up*noscopeJumpHeight*.8f:Vector3.zero);
+        direction=(targetPoint-shotPosition).normalized;
+        GameObject projectileObject = Instantiate(projectilePrefab, shotPosition, Quaternion.LookRotation(direction));
         Projectile projectile = projectileObject.GetComponent<Projectile>();
         if (projectile == null)
         {
             projectile = projectileObject.AddComponent<Projectile>();
         }
 
-        projectile.damage = projectileDamage;
+        projectile.damage = noscope ? Mathf.RoundToInt(projectileDamage*noscopeDamageMultiplier) : projectileDamage;
         projectile.direction = direction;
     }
 

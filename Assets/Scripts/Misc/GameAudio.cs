@@ -6,6 +6,8 @@ public class GameAudio : MonoBehaviour
     public static GameAudio Instance { get; private set; }
     [Header("Sound effects — optional until your recordings are ready")]
     public AudioClip shoot;
+    public AudioClip enemyNoscope;
+    public AudioClip shopMusic;
     public AudioClip enemyExplode;
     public AudioClip enemyStomped;
     [Tooltip("Nonlethal bullet/ordinary damage only.")]
@@ -27,6 +29,7 @@ public class GameAudio : MonoBehaviour
     public float SfxVolume { get; private set; }
 
     private AudioSource mainMusicSource;
+    private AudioSource shopMusicSource;
     private AudioSource pauseMusicSource;
     private AudioSource angryMonkeySource;
     private AudioSource[] voices;
@@ -41,6 +44,7 @@ public class GameAudio : MonoBehaviour
         MusicVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("BM.MusicVolume", defaultMusicVolume));
         SfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("BM.SfxVolume", defaultSfxVolume));
         mainMusicSource = MakeSource(true);
+        shopMusicSource = MakeSource(true);
         pauseMusicSource = MakeSource(true);
         angryMonkeySource = MakeSource(true);
         mainMusicSource.clip = mainGameMusic;
@@ -127,12 +131,18 @@ public class GameAudio : MonoBehaviour
 
     private void ApplyVolumes()
     {
+        if (shopMusicSource != null) shopMusicSource.volume = MusicVolume;
         if (mainMusicSource != null) mainMusicSource.volume = MusicVolume * cinematicMusicGain;
         if (pauseMusicSource != null) pauseMusicSource.volume = MusicVolume;
         if (voices != null) foreach (AudioSource voice in voices) voice.volume = SfxVolume;
         if (angryMonkeySource != null) angryMonkeySource.volume = SfxVolume;
     }
 
+    public void SetShopOpen(bool open)
+    {
+        if(open){mainMusicSource.Pause();shopMusicSource.clip=shopMusic;if(shopMusic!=null)shopMusicSource.Play();}
+        else {shopMusicSource.Stop();mainMusicSource.UnPause();}
+    }
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;

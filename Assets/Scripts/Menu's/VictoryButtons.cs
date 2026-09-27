@@ -42,7 +42,7 @@ public class VictoryButtons : MonoBehaviour
 
     public void BackToMainMenu()
     {
-        SceneManager.LoadScene(mainMenuName);
+        GameSceneFlow.Load(mainMenuName);
     }
 
     public void QuitGame()

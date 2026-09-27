@@ -36,6 +36,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void AnimateBar(RectTransform bar, float target, float speed)
     {
+        if (bar == null) return;
         Vector3 scale = bar.localScale;
         scale.x = Mathf.Lerp(scale.x, target, speed * Time.deltaTime);
         bar.localScale = scale;
@@ -43,6 +44,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
+        var rescue=GetComponent<PlayerUnstuck>();if(rescue!=null && rescue.IsRecovering)return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
 
         targetHealthScale = (float)currentHealth / maxHealth;
@@ -77,11 +79,13 @@ public class PlayerHealth : MonoBehaviour
 
     private void UpdateText()
     {
-        healthText.text = currentHealth + "/" + maxHealth;
+        if (healthText != null) healthText.text = currentHealth + "/" + maxHealth;
     }
 
     public void Die()
     {
-        gameObject.SetActive(false);
+        if (GameSceneFlow.IsLoading) return;
+        currentHealth = 0;
+        GameSceneFlow.Load("DeathScene");
     }
 }

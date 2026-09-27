@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 public class DeathSceneLoader : MonoBehaviour
 {
     [Header("Death Scene")]
-    public string deathSceneName = "GameOver";
+    public string deathSceneName = "DeathScene";
 
     private PlayerHealth playerHealth;
 
@@ -15,9 +15,9 @@ public class DeathSceneLoader : MonoBehaviour
 
     private void Update()
     {
-        if (playerHealth.currentHealth <= 0)
+        if (playerHealth != null && playerHealth.currentHealth <= 0 && !GameSceneFlow.IsLoading)
         {
-            SceneManager.LoadScene(deathSceneName);
+            GameSceneFlow.Load(deathSceneName);
         }
     }
 }

@@ -34,6 +34,19 @@ public class HeavenlyRagdoll : MonoBehaviour
     private readonly List<Follow> followers=new List<Follow>();
     private GameObject puppet;
     private readonly Dictionary<string,Rigidbody> bodies=new Dictionary<string,Rigidbody>();
+    private readonly Dictionary<Rigidbody,Pose> helicopterPose=new Dictionary<Rigidbody,Pose>();
+    private Vector3 helicopterPivot;
+    public void PrepareHelicopter()
+    {
+        helicopterPivot=bodies["root.x"].position;
+        foreach(var body in bodies.Values){helicopterPose[body]=new Pose(body.position,body.rotation);body.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;body.isKinematic=true;}
+    }
+    public void HelicopterPose(Vector3 offset,float yaw)
+    {
+        Quaternion spin=Quaternion.Euler(0,yaw,0);
+        foreach(var entry in helicopterPose){entry.Key.position=helicopterPivot+offset+spin*(entry.Value.position-helicopterPivot);entry.Key.rotation=spin*entry.Value.rotation;}
+    }
+    public void HidePuppet(){if(puppet!=null)puppet.SetActive(false);}
     public void Flop()
     {
         if(IsRagdoll)return;IsRagdoll=true;
