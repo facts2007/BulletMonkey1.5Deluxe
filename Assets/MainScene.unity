@@ -22807,6 +22807,11 @@ Transform:
   - {fileID: 385037811}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1015901640 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6865566369389505494, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
+  m_PrefabInstance: {fileID: 2015953007}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1020604394
 GameObject:
   m_ObjectHideFlags: 0
@@ -41882,7 +41887,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6865566369389505494, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2031197018}
   m_SourcePrefab: {fileID: 100100000, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
 --- !u!1 &2019675612
 GameObject:
@@ -41989,12 +41997,25 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2089173331436627008, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
   m_PrefabInstance: {fileID: 2015953007}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1015901640}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fde348e7b42b6914f87cfafbea520e43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+--- !u!114 &2031197018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015901640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f48657995634d7c4c88591f43774e211, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathSceneLoader
+  deathSceneName: Death
 --- !u!1001 &2036216412
 PrefabInstance:
   m_ObjectHideFlags: 0
