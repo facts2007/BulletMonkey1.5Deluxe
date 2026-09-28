@@ -14,12 +14,14 @@ public class CharacterAnimationDriver : MonoBehaviour
     private Vector3 previousPosition;
     private float shotUntil;
     private string currentState;
+    private PlayerMovement movement;
 
     private void OnEnable()
     {
         if (movementRoot == null) movementRoot = transform;
         previousPosition = movementRoot.position;
         currentState = null;
+        movement=GetComponent<PlayerMovement>();
     }
 
     public void NotifyShot() { shotUntil = Time.time + shotAnimationSeconds; }
@@ -40,10 +42,13 @@ public class CharacterAnimationDriver : MonoBehaviour
         }
         else if (superAbility != null && superAbility.IsSuperShooting) state = "SuperShoot";
         else if (Time.time < shotUntil) state = "Shoot";
-        else if (!moving && playerGun != null && playerGun.currentAmmo <= 0) state = "Empty";
+        else if(movement!=null && !movement.IsGrounded)state="Jump";
+        else if(moving && speedBoost!=null && speedBoost.IsActive)state="CokeyRun";
+        if(state=="Shoot" || state=="SuperShoot")animator.speed=1;
 
         if (state == currentState) return;
         animator.CrossFadeInFixedTime(state, 0.06f, 0);
         currentState = state;
     }
 }
+

@@ -8,7 +8,7 @@ public class DeathButtons : MonoBehaviour
 
     public void Retry()
     {
-        GameSceneFlow.Load(mainSceneName);
+        GameSceneFlow.Load(GameSceneFlow.RetryScene=="DungeonLevel"?"DungeonLevel":mainSceneName);
     }
 
     public void BackToMainMenu()
@@ -16,3 +16,4 @@ public class DeathButtons : MonoBehaviour
         GameSceneFlow.Load(mainMenuName);
     }
 }
+

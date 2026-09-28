@@ -248,7 +248,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet
   speed: 80
-  lifetime: 2
+  lifetime: 6
 --- !u!54 &809128513135132806
 Rigidbody:
   m_ObjectHideFlags: 0

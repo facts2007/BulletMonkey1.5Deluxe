@@ -28,6 +28,8 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 velocity;
     private Vector3 currentVelocity;
     private bool isGrounded;
+    public bool IsGrounded => isGrounded;
+    public float MotionDelta => Time.deltaTime*(speedBoost!=null?speedBoost.CurrentMultiplier:1f);
     private bool wasGrounded;
     private bool hasJumped;
     private float jumpBufferCounter;
@@ -68,7 +70,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            coyoteTimeCounter -= Time.deltaTime;
+            coyoteTimeCounter -= MotionDelta;
         }
 
         if (isGrounded && velocity.y < 0f)
@@ -84,11 +86,11 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 inputDirection = (transform.right * horizontal + transform.forward * vertical).normalized;
         float speedMultiplier = speedBoost != null ? speedBoost.CurrentMultiplier : 1f;
-        Vector3 targetVelocity = inputDirection * walkSpeed * speedMultiplier;
+        Vector3 targetVelocity = inputDirection * walkSpeed;
 
-        currentVelocity = Vector3.Lerp(currentVelocity, targetVelocity, acceleration * Time.deltaTime);
+        currentVelocity = Vector3.Lerp(currentVelocity, targetVelocity, acceleration * MotionDelta);
 
-        controller.Move(currentVelocity * Time.deltaTime);
+        controller.Move(currentVelocity * MotionDelta);
     }
 
     private void HandleJump()
@@ -99,7 +101,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            jumpBufferCounter -= Time.deltaTime;
+            jumpBufferCounter -= MotionDelta;
         }
 
         if (jumpBufferCounter > 0f && coyoteTimeCounter > 0f && !hasJumped)
@@ -116,14 +118,14 @@ public class PlayerMovement : MonoBehaviour
     {
         if (velocity.y < 0f)
         {
-            velocity.y += gravity * fallMultiplier * Time.deltaTime;
+            velocity.y += gravity * fallMultiplier * MotionDelta;
         }
         else
         {
-            velocity.y += gravity * Time.deltaTime;
+            velocity.y += gravity * MotionDelta;
         }
 
-        controller.Move(velocity * Time.deltaTime);
+        controller.Move(velocity * MotionDelta);
     }
 
     private void HandleLanded()
@@ -168,3 +170,4 @@ public class PlayerMovement : MonoBehaviour
         Gizmos.DrawWireSphere(groundCheck.position, groundDistance);
     }
 }
+

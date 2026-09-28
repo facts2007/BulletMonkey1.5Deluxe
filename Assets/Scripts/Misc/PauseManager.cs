@@ -53,6 +53,7 @@ public class PauseManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            if(TutorialOverlay.Instance!=null && TutorialOverlay.Instance.IsOpen){TutorialOverlay.Instance.Close();return;}
             if (GameIsPaused)
             {
                 if (settingsPanel != null && settingsPanel.activeSelf) CloseSettings();
@@ -176,4 +177,5 @@ public class PauseManager : MonoBehaviour
         Cursor.visible = true;
     }
 }
+
 

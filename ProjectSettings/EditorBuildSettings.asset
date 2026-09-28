@@ -17,5 +17,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/VictoryScene.unity
     guid: dc002fcf20c85c4428c27958e2f4d18d
+  - enabled: 1
+    path: Assets/DungeonLevel.unity
+    guid: 0e0f649576bad0642b17626b5c009c05
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

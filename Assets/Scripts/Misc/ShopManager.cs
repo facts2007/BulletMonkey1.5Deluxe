@@ -60,6 +60,14 @@ public class ShopManager : MonoBehaviour
     public int maxAmmoIncreaseLevel4 = 25;
 
     private int maxAmmoLevel = 0;
+    [Header("Ammo and secret dungeon")]
+    public int ammoPurchaseCost=25;
+    public int ammoPurchaseAmount=50;
+    public TextMeshProUGUI ammoPurchaseLabel;
+    public GameObject secretDungeonButton;
+    public bool AllUpgradesPurchased=>healthLevel>=4&&fireRateLevel>=4&&maxAmmoLevel>=4;
+    public void BuyAmmo(){if(playerGun==null || playerGun.currentAmmo>=playerGun.maxAmmo || !SpendCredits(ammoPurchaseCost))return;playerGun.AddAmmo(ammoPurchaseAmount);UpdateShopUI();}
+    public void EnterSecretDungeon(){if(!AllUpgradesPurchased)return;DungeonEncounter.CaptureLoadout(playerHealth,playerGun);CloseShop();GameSceneFlow.Load("DungeonLevel");}
 
     [Header("Shop UI Labels")]
     public TextMeshProUGUI healthUpgradeButtonText;
@@ -232,6 +240,8 @@ public class ShopManager : MonoBehaviour
 
     private void UpdateShopUI()
     {
+        if(secretDungeonButton!=null)secretDungeonButton.SetActive(AllUpgradesPurchased);
+        if(ammoPurchaseLabel!=null)ammoPurchaseLabel.text="AMMO +"+ammoPurchaseAmount+"  |  "+ammoPurchaseCost+" SCRAP";
         SetUpgradeLabel(healthUpgradeButtonText, "HP", healthLevel, healthCostLevel1, healthCostLevel2, healthCostLevel3, healthCostLevel4);
         SetUpgradeLabel(fireRateUpgradeButtonText, "Fire Rate", fireRateLevel, fireRateCostLevel1, fireRateCostLevel2, fireRateCostLevel3, fireRateCostLevel4);
         SetUpgradeLabel(maxAmmoUpgradeButtonText, "Max Ammo", maxAmmoLevel, maxAmmoCostLevel1, maxAmmoCostLevel2, maxAmmoCostLevel3, maxAmmoCostLevel4);
@@ -257,5 +267,6 @@ public class ShopManager : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, interactionRange);
     }
 }
+
 
 

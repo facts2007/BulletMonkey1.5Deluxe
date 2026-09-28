@@ -158,8 +158,7 @@ public class WaveArea : MonoBehaviour
 
             if(index<waves.Length-1)
             {
-                SetText(islandName+" · Wave cleared! Next wave soon");
-                yield return new WaitForSeconds(intermissionSeconds);
+                for(int seconds=Mathf.CeilToInt(intermissionSeconds);seconds>0;seconds--){SetText(islandName+" · Next wave in "+(seconds+countdownSeconds));yield return new WaitForSeconds(1);}
             }
         }
         waveComplete = true;
@@ -207,4 +206,6 @@ public class WaveArea : MonoBehaviour
         foreach (Transform point in spawnPoints) if (point != null) Gizmos.DrawWireSphere(point.position, .5f);
     }
 }
+
+
 
