@@ -1,35 +1,30 @@
-// N64JungleLighting.cs
-// Place in: Assets/Scripts/
-// Requires: Post Processing package (Window -> Package Manager -> Post Processing -> Install)
-// Right-click component header -> "Apply N64 Lighting"
-
-using System.Collections.Generic;
+using System;
 using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class N64JungleLighting : MonoBehaviour
 {
     [Header("Sun")]
-    public Color sunColor = new Color(1.00f, 0.62f, 0.18f);
+    public Color sunColor = new Color(1.0f, 0.62f, 0.18f);
     public float sunIntensity = 2.4f;
     public Vector3 sunRotation = new Vector3(52f, -30f, 0f);
 
-    [Header("Sky Fill Light")]
-    public Color skyFillColor = new Color(0.290f, 0.420f, 0.541f);
+    [Header("Lens Flare")]
+    public UnityEngine.Object lensFlareData;
+    public float lensFlareIntensity = 1.5f;
+
+    [Header("Sky Fill")]
+    public Color skyFillColor = new Color(0.29f, 0.42f, 0.54f);
     public float skyFillIntensity = 0.12f;
     public Vector3 skyFillRotation = new Vector3(-40f, 150f, 0f);
 
-    [Header("Ground Fill Light")]
-    public Color groundFillColor = new Color(0.180f, 0.290f, 0.102f);
+    [Header("Ground Fill")]
+    public Color groundFillColor = new Color(0.18f, 0.29f, 0.10f);
     public float groundFillIntensity = 0.08f;
     public Vector3 groundFillRotation = new Vector3(90f, 0f, 0f);
 
     [Header("Shadows")]
-    public LightShadows shadowType = LightShadows.Hard;
     public float shadowStrength = 0.85f;
     public float shadowBias = 0.02f;
     public float shadowNormalBias = 0.2f;
@@ -50,286 +45,279 @@ public class N64JungleLighting : MonoBehaviour
     [Header("Bloom")]
     public float bloomIntensity = 2.0f;
     public float bloomThreshold = 0.6f;
-    public float bloomSoftKnee = 0.5f;
-    public float bloomDiffusion = 7f;
+    public float bloomScatter = 0.7f;
 
     [Header("Vignette")]
     public float vignetteIntensity = 0.4f;
     public float vignetteSmoothness = 0.45f;
     public Color vignetteColor = new Color(0.02f, 0.05f, 0.01f);
 
-    [Header("Color Grading (Camera Filter)")]
-    public float colorGradingTemperature = 22f;   // strong warm orange push
-    public float colorGradingTint = 14f;           // visible green jungle tint
-    public float colorGradingSaturation = 28f;     // vivid N64-style punch
-    public float colorGradingContrast = 22f;       // crunch the mids hard
-    public Color colorGradingColorFilter = new Color(1.0f, 0.78f, 0.42f); // deep orange amber filter
-
-    [Header("Heat Wave")]
-    public float heatWaveStrength = 0.006f;
-    public float heatWaveScale = 3f;
-    public float heatWaveSpeed = 0.8f;
-    public float heatWaveHeightMask = 0.4f;
+    [Header("Color")]
+    public float temperature = 22f;
+    public float tint = 14f;
+    public float saturation = 28f;
+    public float contrast = 22f;
+    public Color colorFilter = new Color(1.0f, 0.78f, 0.42f);
 
     [Header("Light Probes")]
     public Vector3 probeAreaSize = new Vector3(40f, 6f, 40f);
     public Vector3 probeSpacing = new Vector3(5f, 3f, 5f);
 
-    // The layer index we assign to the volume object
-    const string PPLayerName = "PostProcessing";
+    private const string SUN = "N64_Sun";
+    private const string SKY = "N64_SkyFill";
+    private const string GROUND = "N64_GroundFill";
+    private const string VOLUME = "N64_GlobalVolume";
+    private const string PROBES = "N64_LightProbes";
 
     [ContextMenu("Apply N64 Lighting")]
     public void Apply()
     {
-        Debug.Log("[N64 Lighting] Applying...");
-
         CreateSun();
-        CreateLight("N64_SkyFill", skyFillColor, skyFillIntensity, skyFillRotation);
-        CreateLight("N64_GroundFill", groundFillColor, groundFillIntensity, groundFillRotation);
+        CreateFillLight(SKY, skyFillColor, skyFillIntensity, skyFillRotation);
+        CreateFillLight(GROUND, groundFillColor, groundFillIntensity, groundFillRotation);
 
-        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        SetupAmbient();
+        SetupFog();
+        SetupCamera();
+        SetupVolume();
+        SetupProbes();
+
+        Debug.Log("N64 Jungle Lighting applied.");
+    }
+
+    private void CreateSun()
+    {
+        DeleteObject(SUN);
+
+        GameObject obj = new GameObject(SUN);
+        obj.transform.SetParent(transform);
+        obj.transform.position = transform.position;
+        obj.transform.eulerAngles = sunRotation;
+
+        Light light = obj.AddComponent<Light>();
+
+        light.type = LightType.Directional;
+        light.color = sunColor;
+        light.intensity = sunIntensity;
+
+        light.shadows = LightShadows.Soft;
+        light.shadowStrength = shadowStrength;
+        light.shadowBias = shadowBias;
+        light.shadowNormalBias = shadowNormalBias;
+
+        AddLensFlare(obj);
+    }
+
+    private void AddLensFlare(GameObject sun)
+    {
+        if (lensFlareData == null)
+        {
+            Debug.LogWarning(
+                "N64 Jungle Lighting: No Lens Flare Data assigned. " +
+                "The lighting will still work."
+            );
+
+            return;
+        }
+
+        Type flareType = Type.GetType(
+            "UnityEngine.Rendering.Universal.LensFlareComponentSRP, Unity.RenderPipelines.Universal.Runtime"
+        );
+
+        if (flareType == null)
+        {
+            Debug.LogWarning(
+                "N64 Jungle Lighting: Lens Flare SRP component was not found in this URP installation."
+            );
+
+            return;
+        }
+
+        Component flare = sun.GetComponent(flareType);
+
+        if (flare == null)
+            flare = sun.AddComponent(flareType);
+
+        SetProperty(flare, "lensFlareData", lensFlareData);
+        SetProperty(flare, "intensity", lensFlareIntensity);
+
+        Debug.Log("N64 Jungle Lighting: Lens flare component added.");
+    }
+
+    private void SetProperty(Component component, string propertyName, object value)
+    {
+        var property = component.GetType().GetProperty(propertyName);
+
+        if (property != null && property.CanWrite)
+        {
+            try
+            {
+                property.SetValue(component, value);
+            }
+            catch
+            {
+                Debug.LogWarning(
+                    "Could not set lens flare property: " + propertyName
+                );
+            }
+        }
+    }
+
+    private void CreateFillLight(
+        string objectName,
+        Color color,
+        float intensity,
+        Vector3 rotation)
+    {
+        DeleteObject(objectName);
+
+        GameObject obj = new GameObject(objectName);
+
+        obj.transform.SetParent(transform);
+        obj.transform.position = transform.position;
+        obj.transform.eulerAngles = rotation;
+
+        Light light = obj.AddComponent<Light>();
+
+        light.type = LightType.Directional;
+        light.color = color;
+        light.intensity = intensity;
+        light.shadows = LightShadows.None;
+    }
+
+    private void SetupAmbient()
+    {
+        RenderSettings.ambientMode = AmbientMode.Trilight;
+
         RenderSettings.ambientSkyColor = ambientSky;
         RenderSettings.ambientEquatorColor = ambientEquator;
         RenderSettings.ambientGroundColor = ambientGround;
         RenderSettings.ambientIntensity = ambientIntensity;
+    }
 
+    private void SetupFog()
+    {
         RenderSettings.fog = true;
         RenderSettings.fogColor = fogColor;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
         RenderSettings.fogDensity = fogDensity;
-
-        SetupCamera();
-        BuildProbes();
-        SetupPostProcessing();
-        SetupHeatWave();
-
-#if UNITY_EDITOR
-        EditorUtility.SetDirty(gameObject);
-#endif
-
-        Debug.Log("[N64 Lighting] Done.");
     }
 
-    // ── Sun ──────────────────────────────────────────────────────────────────
-
-    void CreateSun()
+    private void SetupCamera()
     {
-        GameObject existing = GameObject.Find("N64_Sun");
-        if (existing != null) DestroyImmediate(existing);
+        Camera cam = Camera.main;
 
-        GameObject go = new GameObject("N64_Sun");
-        go.transform.SetParent(this.transform);
-        go.transform.eulerAngles = sunRotation;
-
-        Light l = go.AddComponent<Light>();
-        l.type = LightType.Directional;
-        l.color = sunColor;
-        l.intensity = sunIntensity;
-        l.shadows = LightShadows.Hard;
-        l.shadowStrength = shadowStrength;
-        l.shadowBias = shadowBias;
-        l.shadowNormalBias = shadowNormalBias;
-        l.shadowResolution = UnityEngine.Rendering.LightShadowResolution.VeryHigh;
-
-        // Force Quality Settings to actually render shadows
-        QualitySettings.shadows = ShadowQuality.All;
-        QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
-        QualitySettings.shadowDistance = 150f;
-        QualitySettings.shadowCascades = 2;
-        QualitySettings.shadowProjection = ShadowProjection.CloseFit;
-
-        Debug.Log("[N64 Lighting] Sun created with hard shadows, distance 150.");
+        if (cam != null)
+            cam.farClipPlane = cameraFarClip;
     }
 
-    void CreateLight(string goName, Color color, float intensity, Vector3 rotation)
+    private void SetupVolume()
     {
-        GameObject existing = GameObject.Find(goName);
-        if (existing != null) DestroyImmediate(existing);
+        GameObject obj = GameObject.Find(VOLUME);
 
-        GameObject go = new GameObject(goName);
-        go.transform.SetParent(this.transform);
-        go.transform.eulerAngles = rotation;
-
-        Light l = go.AddComponent<Light>();
-        l.type = LightType.Directional;
-        l.color = color;
-        l.intensity = intensity;
-        l.shadows = LightShadows.None;
-    }
-
-    // ── Camera ───────────────────────────────────────────────────────────────
-
-    void SetupCamera()
-    {
-        if (Camera.main == null)
+        if (obj == null)
         {
-            Debug.LogWarning("[N64 Lighting] No Main Camera found. Tag your camera as MainCamera.");
-            return;
-        }
-        Camera.main.farClipPlane = cameraFarClip;
-        Camera.main.allowHDR = true;
-    }
-
-    // ── Post Processing ──────────────────────────────────────────────────────
-
-    void SetupPostProcessing()
-    {
-        if (Camera.main == null)
-        {
-            Debug.LogWarning("[N64 Lighting] No Main Camera — skipping post processing.");
-            return;
+            obj = new GameObject(VOLUME);
+            obj.transform.SetParent(transform);
         }
 
-        // ── Step 1: ensure PostProcessing layer exists ────────────────────────
-        int ppLayer = EnsureLayer(PPLayerName);
+        Volume volume = obj.GetComponent<Volume>();
 
-        // ── Step 2: volume object on that layer ───────────────────────────────
-        GameObject volObj = GameObject.Find("N64_PostProcessVolume");
-        if (volObj == null)
-        {
-            volObj = new GameObject("N64_PostProcessVolume");
-            volObj.transform.SetParent(this.transform);
-        }
-        volObj.layer = ppLayer;
-
-        PostProcessVolume volume = volObj.GetComponent<PostProcessVolume>();
         if (volume == null)
-            volume = volObj.AddComponent<PostProcessVolume>();
+            volume = obj.AddComponent<Volume>();
 
         volume.isGlobal = true;
-        volume.priority = 10;
+        volume.priority = 10f;
 
-        // ── Step 3: build profile — always fresh so bloom actually applies ────
-        PostProcessProfile profile = ScriptableObject.CreateInstance<PostProcessProfile>();
+        VolumeProfile profile = volume.sharedProfile;
 
-#if UNITY_EDITOR
-        string profilePath = "Assets/N64_PostProcessProfile.asset";
-        // Delete stale profile so settings are never silently skipped
-        if (System.IO.File.Exists(profilePath))
+        if (profile == null)
         {
-            AssetDatabase.DeleteAsset(profilePath);
-            AssetDatabase.Refresh();
+            profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            volume.sharedProfile = profile;
         }
-        AssetDatabase.CreateAsset(profile, profilePath);
-        AssetDatabase.SaveAssets();
-        profile = AssetDatabase.LoadAssetAtPath<PostProcessProfile>(profilePath);
-#endif
 
-        volume.sharedProfile = profile;
+        Bloom bloom;
 
-        // ── Bloom ─────────────────────────────────────────────────────────────
-        Bloom bloom = profile.AddSettings<Bloom>();
-        bloom.enabled.Override(true);
+        if (!profile.TryGet(out bloom))
+            bloom = profile.Add<Bloom>(true);
+
+        bloom.active = true;
         bloom.intensity.Override(bloomIntensity);
         bloom.threshold.Override(bloomThreshold);
-        bloom.softKnee.Override(bloomSoftKnee);
-        bloom.diffusion.Override(bloomDiffusion);
-        bloom.fastMode.Override(false);
+        bloom.scatter.Override(bloomScatter);
 
-        // ── Vignette ──────────────────────────────────────────────────────────
-        Vignette vignette = profile.AddSettings<Vignette>();
-        vignette.enabled.Override(true);
-        vignette.mode.Override(VignetteMode.Classic);
-        vignette.color.Override(vignetteColor);
+        Vignette vignette;
+
+        if (!profile.TryGet(out vignette))
+            vignette = profile.Add<Vignette>(true);
+
+        vignette.active = true;
         vignette.intensity.Override(vignetteIntensity);
         vignette.smoothness.Override(vignetteSmoothness);
-        vignette.rounded.Override(true);
+        vignette.color.Override(vignetteColor);
 
-        // ── Color Grading (Camera Filter) ─────────────────────────────────────
-        ColorGrading cg = profile.AddSettings<ColorGrading>();
-        cg.enabled.Override(true);
+        ColorAdjustments color;
 
-        cg.temperature.Override(colorGradingTemperature);
-        cg.tint.Override(colorGradingTint);
-        cg.saturation.Override(colorGradingSaturation);
-        cg.contrast.Override(colorGradingContrast);
-        cg.colorFilter.Override(colorGradingColorFilter);
+        if (!profile.TryGet(out color))
+            color = profile.Add<ColorAdjustments>(true);
 
-        // ── Step 4: PostProcessLayer on camera pointing at our layer ──────────
-        PostProcessLayer ppLayerComponent = Camera.main.GetComponent<PostProcessLayer>();
-        if (ppLayerComponent == null)
-            ppLayerComponent = Camera.main.gameObject.AddComponent<PostProcessLayer>();
+        color.active = true;
+        color.saturation.Override(saturation);
+        color.contrast.Override(contrast);
+        color.colorFilter.Override(colorFilter);
 
-        ppLayerComponent.volumeLayer = 1 << ppLayer;   // <-- THIS is what makes it actually render
-        ppLayerComponent.enabled = true;
-        ppLayerComponent.antialiasingMode = PostProcessLayer.Antialiasing.FastApproximateAntialiasing;
+        WhiteBalance whiteBalance;
 
-#if UNITY_EDITOR
-        EditorUtility.SetDirty(Camera.main.gameObject);
-#endif
+        if (!profile.TryGet(out whiteBalance))
+            whiteBalance = profile.Add<WhiteBalance>(true);
 
-        Debug.Log("[N64 Lighting] Post processing active on layer: " + PPLayerName);
+        whiteBalance.active = true;
+        whiteBalance.temperature.Override(temperature);
+        whiteBalance.tint.Override(tint);
     }
 
-    // ── Ensure a layer exists, return its index ───────────────────────────────
-
-    int EnsureLayer(string layerName)
+    private void SetupProbes()
     {
-        // Check if it already exists
-        int idx = LayerMask.NameToLayer(layerName);
-        if (idx != -1) return idx;
+        DeleteObject(PROBES);
 
-#if UNITY_EDITOR
-        // Add it to TagManager
-        SerializedObject tagManager = new SerializedObject(
-            AssetDatabase.LoadAssetAtPath<Object>("ProjectSettings/TagManager.asset"));
-        SerializedProperty layers = tagManager.FindProperty("layers");
+        GameObject obj = new GameObject(PROBES);
+        obj.transform.SetParent(transform);
 
-        for (int i = 8; i < layers.arraySize; i++)
-        {
-            SerializedProperty slot = layers.GetArrayElementAtIndex(i);
-            if (string.IsNullOrEmpty(slot.stringValue))
-            {
-                slot.stringValue = layerName;
-                tagManager.ApplyModifiedProperties();
-                Debug.Log("[N64 Lighting] Created layer: " + layerName + " at index " + i);
-                return i;
-            }
-        }
-        Debug.LogWarning("[N64 Lighting] No free layer slots. Delete an unused layer and re-apply.");
-        return 0;
-#else
-        return 0;
-#endif
-    }
+        LightProbeGroup group = obj.AddComponent<LightProbeGroup>();
 
-    // ── Heat Wave ─────────────────────────────────────────────────────────────
+        var positions = new System.Collections.Generic.List<Vector3>();
 
-    void SetupHeatWave()
-    {
-        if (Camera.main == null) return;
-
-        N64HeatWave hw = Camera.main.GetComponent<N64HeatWave>();
-        if (hw == null)
-            hw = Camera.main.gameObject.AddComponent<N64HeatWave>();
-
-        hw.distortionStrength = heatWaveStrength;
-        hw.distortionScale    = heatWaveScale;
-        hw.distortionSpeed    = heatWaveSpeed;
-        hw.heightMask         = heatWaveHeightMask;
-
-        Debug.Log("[N64 Lighting] Heat wave added to camera.");
-    }
-
-    // ── Light Probes ──────────────────────────────────────────────────────────
-
-    void BuildProbes()
-    {
-        GameObject existing = GameObject.Find("N64_LightProbes");
-        if (existing != null) DestroyImmediate(existing);
-
-        GameObject go = new GameObject("N64_LightProbes");
-        go.transform.SetParent(this.transform);
-
-        LightProbeGroup lpg = go.AddComponent<LightProbeGroup>();
-        List<Vector3> positions = new List<Vector3>();
-        Vector3 origin = transform.position - probeAreaSize * 0.5f;
+        Vector3 start =
+            transform.position -
+            probeAreaSize * 0.5f;
 
         for (float x = 0; x <= probeAreaSize.x; x += probeSpacing.x)
+        {
             for (float y = 0; y <= probeAreaSize.y; y += probeSpacing.y)
+            {
                 for (float z = 0; z <= probeAreaSize.z; z += probeSpacing.z)
-                    positions.Add(origin + new Vector3(x, y, z));
+                {
+                    positions.Add(
+                        start + new Vector3(x, y, z)
+                    );
+                }
+            }
+        }
 
-        lpg.probePositions = positions.ToArray();
+        group.probePositions = positions.ToArray();
+    }
+
+    private void DeleteObject(string objectName)
+    {
+        GameObject obj = GameObject.Find(objectName);
+
+        if (obj != null)
+        {
+            if (Application.isPlaying)
+                Destroy(obj);
+            else
+                DestroyImmediate(obj);
+        }
     }
 }
