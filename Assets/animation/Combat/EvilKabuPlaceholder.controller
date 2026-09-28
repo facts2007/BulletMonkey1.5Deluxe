@@ -1,5 +1,31 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1102 &-7616364954372875852
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Stomp
+  m_Speed: 1.2500001
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: df9ed20a6acefd64aa8e71d665283f21, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &-7393374745753460968
 AnimatorState:
   serializedVersion: 6
@@ -46,7 +72,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 3750d7789f0d5e945895e11947fe0ca2, type: 2}
+  m_Motion: {fileID: 7400000, guid: a01ceacbac5a78c4e874ea92f2a620c3, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -60,7 +86,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ThrowImp
-  m_Speed: 1
+  m_Speed: 1.1764705
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -72,7 +98,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: d4e7da8e5bc756c46bae41a708910bbb, type: 2}
+  m_Motion: {fileID: 7400000, guid: 2447ae4c84f9f70428134186296988bd, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -86,7 +112,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MegaPunch
-  m_Speed: 1
+  m_Speed: 0.49019608
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -98,7 +124,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: dc3f6c44882e65b4ab6520273456803f, type: 2}
+  m_Motion: {fileID: 7400000, guid: 5b7f1e1d8d27d1b47935d4d8dde837cf, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -159,6 +185,9 @@ AnimatorStateMachine:
   - serializedVersion: 1
     m_State: {fileID: -3292940400341983945}
     m_Position: {x: 445, y: 455, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -7616364954372875852}
+    m_Position: {x: 480, y: 520, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -177,7 +206,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: RockThrow
-  m_Speed: 1
+  m_Speed: 1.1764705
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -189,7 +218,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: d23acb2c0bf7d374aa6fbd3a8fce91e0, type: 2}
+  m_Motion: {fileID: 7400000, guid: 836e026333a6b07408e7e63d5d0fd655, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -215,7 +244,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 33b3a24ae7fe2294cb9248732ad2da99, type: 2}
+  m_Motion: {fileID: 7400000, guid: 3ce199f8f668d2f49b4d8f1f567f4f04, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

@@ -11,6 +11,10 @@ public class Enemy : MonoBehaviour
     public bool canBeStomped = true;
     public bool stompInstantKills = true;
 
+    [Header("Healing banana")]
+    public GameObject healingBananaPrefab;
+    [Range(0,1)] public float healingBananaDropChance=.15f;
+
     [Header("Parts Drop")]
     public GameObject partsDropPrefab;
     public float dropChance = 0.5f;
@@ -73,6 +77,8 @@ public class Enemy : MonoBehaviour
         if (healthBarObject != null) healthBarObject.SetActive(false);
         OnEnemyDied?.Invoke();
 
+        if(healingBananaPrefab!=null && UnityEngine.Random.value<healingBananaDropChance)
+            LootMotion.Drop(healingBananaPrefab,transform.position+Vector3.up*.5f,healingBananaPrefab.transform.rotation);
         TryDropParts();
         TryDropAmmo();
 

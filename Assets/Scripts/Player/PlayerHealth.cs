@@ -44,7 +44,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
-        if(BossFusionEncounter.IsCutsceneActive || DungeonEncounter.IsCutsceneActive)return;
+        if(BossFusionEncounter.IsCutsceneActive || DungeonEncounter.IsCutsceneActive || PlayerCheer.IsCutsceneActive)return;
         var rescue=GetComponent<PlayerUnstuck>();if(rescue!=null && rescue.IsRecovering)return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
 
@@ -61,6 +61,13 @@ public class PlayerHealth : MonoBehaviour
         {
             Die();
         }
+    }
+
+    public void Heal(int amount)
+    {
+        if(currentHealth<=0 || amount<=0)return;
+        currentHealth=Mathf.Min(maxHealth,currentHealth+amount);
+        targetHealthScale=targetRedScale=(float)currentHealth/maxHealth;UpdateText();
     }
 
     public void IncreaseMaxHealth(int amount)

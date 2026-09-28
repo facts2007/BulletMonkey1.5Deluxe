@@ -27,3 +27,12 @@ The editor-only PlaceholderPassChecks runner starts from MainScene in Play Mode.
 
 ## Boss and scrap update
 Scrap HUD is right-aligned inside the screen with room for six digits. Moneycube grants 500 scrap once on touch. Evil Kabu now has 10,000 HP; Run, Jump, and ThrowImp animation states are available. After each three normal attacks, he throws one active melee imp; it guarantees 75 ammo on death (DungeonEncounter.impAmmoDrop).
+
+## Final models, animations, and boss balance
+- Player CokeyRun, Jump, and Cheer use the new bulletmonkey(anims) clips. Copied clips normalize the exported rig scale and bone translation units to the existing player skeleton; keep the original model import intact.
+- Q plays a manual cheer with sound and the monkey picture. Island 3 miniboss, Imptron, and Evil Kabu victories trigger a separate Cheer Camera shot, then return to the gameplay camera. Cheer Camera is assigned on PlayerCheer in MainScene and DungeonLevel. The player already uses bulletmonekyAvatar.
+- Evil Kabu uses the new model and Run, punch, throw, and jump+stomp clips. Attacks independently roll 33% rock, 34% punch, and 33% stomp. One bonus-ammo imp is thrown after each six normal attacks.
+- Boss health remains 10,000. Windup .85s, recovery .8s; rock/punch/stomp damage is 30/40/45. The existing bellyDamage and bellyRadius Inspector fields now configure the stomp.
+- DungeonEncounter has a Boulder Prefab slot; when empty, the existing sphere rock is used. Imp Prefab is separate.
+- HealingBananaPickup uses the normal banaan model, spins/bounces with loot, heals 20 HP without exceeding maximum, and drops from enemies with 15% probability. Full-health players leave it available for later.
+- 18 focused integration checks passed. Final visual inspection verified the corrected cheer pose, monkey image, dedicated camera, and return to gameplay.

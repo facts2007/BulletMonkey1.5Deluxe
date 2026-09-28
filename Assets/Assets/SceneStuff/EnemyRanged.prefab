@@ -338,6 +338,8 @@ MonoBehaviour:
   popDuration: 0.06
   canBeStomped: 0
   stompInstantKills: 0
+  healingBananaPrefab: {fileID: 4181741902183964340, guid: b50b0cfd466728c4eabc00e2217a2737, type: 3}
+  healingBananaDropChance: 0.15
   partsDropPrefab: {fileID: 1664063014017317535, guid: 63a5ac4c529f92d49be5b2b36aff49b4, type: 3}
   dropChance: 0.5
   minDropAmount: 10

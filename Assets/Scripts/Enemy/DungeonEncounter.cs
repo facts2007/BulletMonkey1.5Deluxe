@@ -18,6 +18,8 @@ public class DungeonEncounter : MonoBehaviour
     [Range(0,1)] public float skyAmmoChance=.1f, skySuperBananaChance=.05f;
     public int skyAmmoAmount=50;
     public float approachSeconds=.4f;
+    public float facingDegreesPerSecond=540;
+    private bool facingLocked;
     private GameObject airborneImp;
     public float windupSeconds=1.2f;
     public float recoverySeconds=1.8f;
@@ -25,6 +27,9 @@ public class DungeonEncounter : MonoBehaviour
     public float rockRadius=4,punchLength=14,punchWidth=7,bellyRadius=9;
     public Transform circleIndicator,rectangleIndicator;
     public Material rockMaterial;
+    public GameObject boulderPrefab;
+    public int movesPerImp=6;
+    public static int ChooseAttack(float roll){return roll<.33f?0:roll<.67f?1:2;}
     [Header("Exit sequence")]
     public GameObject keyPickup;
     public Transform door;
@@ -68,23 +73,29 @@ public class DungeonEncounter : MonoBehaviour
     }
     private void Update()
     {
+        if(!BossDefeated && boss!=null && !boss.IsDead && player!=null && !facingLocked)
+        {
+            Vector3 direction=player.transform.position-boss.transform.position;direction.y=0;
+            if(direction.sqrMagnitude>.01f)boss.transform.rotation=Quaternion.RotateTowards(boss.transform.rotation,Quaternion.LookRotation(direction),facingDegreesPerSecond*Time.deltaTime);
+        }
         if(heavenlySource!=null&&GameAudio.Instance!=null)heavenlySource.volume=GameAudio.Instance.MusicVolume;
         if(!BossDefeated && boss!=null && (boss.IsDead||!boss.gameObject.activeInHierarchy))DefeatBoss();
     }
     private IEnumerator Fight()
     {
         yield return new WaitForSeconds(2);
-        int attack=0;
+        int moves=0;
         while(!BossDefeated)
         {
             if(boss==null||boss.IsDead)yield break;
+            int attack=ChooseAttack(Random.value);
             LastAttack=attack;Vector3 target=player.transform.position;target.y=0;target.x=Mathf.Clamp(target.x,-29,29);target.z=Mathf.Clamp(target.z,-43,42);
             if(attack==0)yield return RockThrow(target);
             else if(attack==1)yield return MegaPunch(target);
-            else yield return BellyBonk(target);
+            else yield return Stomp(target);
             HideIndicators();Animate("Idle");if(visual!=null)visual.localScale=originalVisualScale;
-            RollSkySupplies();attack=(attack+1)%3;yield return new WaitForSeconds(recoverySeconds);
-            if(attack==0 && !BossDefeated){LastAttack=3;yield return ThrowImp();RollSkySupplies();HideIndicators();Animate("Idle");yield return new WaitForSeconds(recoverySeconds);}
+            RollSkySupplies();moves++;yield return new WaitForSeconds(recoverySeconds);
+            if(moves%Mathf.Max(1,movesPerImp)==0 && !BossDefeated){LastAttack=3;yield return ThrowImp();RollSkySupplies();HideIndicators();Animate("Idle");yield return new WaitForSeconds(recoverySeconds);}
         }
     }
     private void Animate(string state){if(animator!=null)animator.CrossFadeInFixedTime(state,.1f);}
@@ -93,31 +104,37 @@ public class DungeonEncounter : MonoBehaviour
     private IEnumerator RockThrow(Vector3 target)
     {
         Animate("RockThrow");ShowCircle(target,rockRadius);yield return new WaitForSeconds(windupSeconds);
-        activeRock=GameObject.CreatePrimitive(PrimitiveType.Sphere);activeRock.name="Evil Kabu thrown rock";Destroy(activeRock.GetComponent<Collider>());activeRock.GetComponent<Renderer>().sharedMaterial=rockMaterial;activeRock.transform.localScale=Vector3.one*2;
+        if(boulderPrefab!=null)activeRock=Instantiate(boulderPrefab);
+        else {activeRock=GameObject.CreatePrimitive(PrimitiveType.Sphere);activeRock.GetComponent<Renderer>().sharedMaterial=rockMaterial;activeRock.transform.localScale=Vector3.one*2;}
+        activeRock.name="Evil Kabu thrown rock";
+        foreach(var c in activeRock.GetComponentsInChildren<Collider>())c.enabled=false;
+        foreach(var rb in activeRock.GetComponentsInChildren<Rigidbody>()){rb.isKinematic=true;rb.useGravity=false;}
         Vector3 start=boss.transform.position+Vector3.up*9;
         for(float t=0;t<1;t+=Time.deltaTime){activeRock.transform.position=Vector3.Lerp(start,target,t)+Vector3.up*Mathf.Sin(t*Mathf.PI)*7;activeRock.transform.Rotate(new Vector3(80,140,40)*Time.deltaTime);yield return null;}
         DamageCircle(target,rockRadius,rockDamage);SpawnFog.Poof(target,3);Destroy(activeRock);activeRock=null;
     }
     private IEnumerator MegaPunch(Vector3 target)
     {
+        // Keep the committed punch aligned with its red ground indicator.
+        facingLocked=true;
         // Approach first so a melee attack remains a threat across the arena.
         Vector3 direction=target-boss.transform.position;direction.y=0;if(direction.sqrMagnitude<.01f)direction=Vector3.forward;direction.Normalize();
         Vector3 destination=target-direction*8;destination.x=Mathf.Clamp(destination.x,-28,28);destination.z=Mathf.Clamp(destination.z,-40,38);
-        Animate("Run");Vector3 from=boss.transform.position;for(float t=0;t<Mathf.Max(.05f,approachSeconds);t+=Time.deltaTime){boss.transform.position=Vector3.Lerp(from,destination,t/Mathf.Max(.05f,approachSeconds));yield return null;}
+        Animate("Run");boss.transform.rotation=Quaternion.LookRotation(direction);Vector3 from=boss.transform.position;for(float t=0;t<Mathf.Max(.05f,approachSeconds);t+=Time.deltaTime){boss.transform.position=Vector3.Lerp(from,destination,t/Mathf.Max(.05f,approachSeconds));yield return null;}
         boss.transform.position=destination;boss.transform.rotation=Quaternion.LookRotation(direction);
         Vector3 center=destination+direction*(punchLength*.5f);rectangleIndicator.SetPositionAndRotation(center+Vector3.up*.08f,Quaternion.LookRotation(direction));rectangleIndicator.localScale=new Vector3(punchWidth,.05f,punchLength);rectangleIndicator.gameObject.SetActive(true);
         Animate("MegaPunch");yield return new WaitForSeconds(windupSeconds);
-        visual.localScale=Vector3.Scale(originalVisualScale,new Vector3(1.15f,.7f,1.35f));
+        // The final model supplies the punch motion.
         Vector3 local=Quaternion.Inverse(rectangleIndicator.rotation)*(player.transform.position-center);
         if(Mathf.Abs(local.x)<=punchWidth*.5f&&Mathf.Abs(local.z)<=punchLength*.5f&&player.transform.position.y<5)player.TakeDamage(punchDamage);
-        SpawnFog.Poof(center,3);yield return new WaitForSeconds(.2f);
+        SpawnFog.Poof(center,3);yield return new WaitForSeconds(.2f);facingLocked=false;
     }
-    private IEnumerator BellyBonk(Vector3 target)
+    private IEnumerator Stomp(Vector3 target)
     {
-        Animate("BellyBonk");ShowCircle(target,bellyRadius);yield return new WaitForSeconds(windupSeconds);
+        Animate("Idle");ShowCircle(target,bellyRadius);yield return new WaitForSeconds(windupSeconds);
         Vector3 start=boss.transform.position;
-        Animate("Jump");for(float t=0;t<1.1f;t+=Time.deltaTime){float f=t/1.1f;boss.transform.position=Vector3.Lerp(start,target,f)+Vector3.up*Mathf.Sin(f*Mathf.PI)*8;yield return null;}
-        Animate("BellyBonk");boss.transform.position=target;visual.localScale=Vector3.Scale(originalVisualScale,new Vector3(1.5f,.5f,1.5f));DamageCircle(target,bellyRadius,bellyDamage);SpawnFog.Poof(target,6);yield return new WaitForSeconds(.3f);
+        Animate("Stomp");for(float t=0;t<1.1f;t+=Time.deltaTime){float f=t/1.1f;boss.transform.position=Vector3.Lerp(start,target,f)+Vector3.up*Mathf.Sin(f*Mathf.PI)*8;yield return null;}
+        boss.transform.position=target;DamageCircle(target,bellyRadius,bellyDamage);SpawnFog.Poof(target,6);yield return new WaitForSeconds(.3f);
     }
     private void RollSkySupplies()
     {
@@ -166,7 +183,7 @@ public class DungeonEncounter : MonoBehaviour
     public void DamageCircle(Vector3 center,float radius,int damage){Vector3 delta=player.transform.position-center;delta.y=0;if(delta.sqrMagnitude<=radius*radius&&player.transform.position.y<center.y+5)player.TakeDamage(damage);}
     private void DefeatBoss()
     {
-        BossDefeated=true;if(fight!=null)StopCoroutine(fight);HideIndicators();if(activeRock!=null)Destroy(activeRock);if(airborneImp!=null)Destroy(airborneImp);
+        BossDefeated=true;PlayerCheer.CelebrateBoss();if(fight!=null)StopCoroutine(fight);HideIndicators();if(activeRock!=null)Destroy(activeRock);if(airborneImp!=null)Destroy(airborneImp);
         if(ownsMusic&&GameAudio.Instance!=null){GameAudio.Instance.EndMinibossMusic();ownsMusic=false;}
         keyPickup.transform.position=new Vector3(Mathf.Clamp(boss.transform.position.x,-28,28),1,Mathf.Clamp(boss.transform.position.z,-40,40));keyPickup.SetActive(true);var motion=keyPickup.GetComponent<LootMotion>();if(motion!=null)motion.Launch();
         if(statusText!=null)statusText.text="EVIL KABU DEFEATED — PICK UP HIS KEY";
@@ -174,7 +191,7 @@ public class DungeonEncounter : MonoBehaviour
     public void CollectKey(){if(!BossDefeated)return;HasKey=true;if(statusText!=null)statusText.text="KEY FOUND — UNLOCK THE FAR DOOR";}
     public void TryOpenDoor()
     {
-        if(DoorOpened||IsCutsceneActive)return;
+        if(DoorOpened||IsCutsceneActive||PlayerCheer.IsCutsceneActive)return;
         if(!HasKey){if(statusText!=null)statusText.text="LOCKED — DEFEAT EVIL KABU AND FIND HIS KEY";return;}
         StartCoroutine(OpenDoor());
     }

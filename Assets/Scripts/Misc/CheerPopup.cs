@@ -16,7 +16,7 @@ public class CheerPopup : MonoBehaviour
     {
         if(remaining<=0)return;remaining-=Time.deltaTime;
         if(remaining<=0){picture.gameObject.SetActive(false);return;}
-        var camera=Camera.main;if(camera==null)return;
+        var camera=PlayerCheer.ActiveCamera!=null?PlayerCheer.ActiveCamera:Camera.main;if(camera==null)return;
         Vector3 anchor=body!=null?body.bounds.center+Vector3.up*(body.bounds.extents.y*.35f)+camera.transform.right*(body.bounds.extents.magnitude+.5f):player.position+Vector3.up*3+camera.transform.right*3;
         Vector3 screen=camera.WorldToScreenPoint(anchor);
         if(screen.z<=0){group.alpha=0;return;}

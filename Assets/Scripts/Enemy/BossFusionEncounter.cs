@@ -125,7 +125,7 @@ public class BossFusionEncounter : MonoBehaviour
         if(!Started || Defeated || IsCutsceneActive || Boss==null)return;
         if(Boss.IsDead || !Boss.gameObject.activeInHierarchy)
         {
-            Defeated=true;IsEncounterActive=false;if(finalMistDoor!=null)finalMistDoor.SetActive(false);
+            Defeated=true;IsEncounterActive=false;PlayerCheer.CelebrateBoss();if(finalMistDoor!=null)finalMistDoor.SetActive(false);
             themeSource.Stop();if(audioManager!=null)audioManager.SetCinematicMusicDucked(false);
         }
     }

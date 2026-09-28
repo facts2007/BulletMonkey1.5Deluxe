@@ -154,6 +154,7 @@ public class WaveArea : MonoBehaviour
                 yield return new WaitForSeconds(.1f);
             } while (enemiesRemaining > 0);
             EndBossMusic();
+            if(waves[index].bossWave){PlayerCheer.CelebrateBoss();while(PlayerCheer.IsCutsceneActive)yield return null;}
             IsCombatActive=false;
 
             if(index<waves.Length-1)

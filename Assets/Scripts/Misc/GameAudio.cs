@@ -170,6 +170,13 @@ public class GameAudio : MonoBehaviour
         if(cheerPopup!=null)cheerPopup.Show();
         nextCheer=Time.time+Mathf.Max(cheerCooldown,playerCheer!=null?playerCheer.length:0);killChain=0;
     }
+    public void PlayPlayerCheer()
+    {
+        cheerSource.volume=SfxVolume*cheerGain;cheerSource.clip=playerCheer;
+        if(playerCheer!=null)cheerSource.Play();
+        if(cheerPopup!=null)cheerPopup.Show();
+        nextCheer=Time.time+cheerCooldown;
+    }
     public bool BeginMinibossMusic(AudioClip clip)
     {
         if(clip==null || minibossActive)return false;

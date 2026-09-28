@@ -15,6 +15,9 @@ public class CharacterAnimationDriver : MonoBehaviour
     private float shotUntil;
     private string currentState;
     private PlayerMovement movement;
+    private float cheerUntil;
+    public void Cheer(float seconds){cheerUntil=Time.time+seconds;currentState=null;}
+    public void EndCheer(){cheerUntil=0;currentState=null;}
 
     private void OnEnable()
     {
@@ -44,6 +47,8 @@ public class CharacterAnimationDriver : MonoBehaviour
         else if (Time.time < shotUntil) state = "Shoot";
         else if(movement!=null && !movement.IsGrounded)state="Jump";
         else if(moving && speedBoost!=null && speedBoost.IsActive)state="CokeyRun";
+        if(Time.time<cheerUntil)state="Cheer";
+        if(state=="Cheer")animator.speed=1;
         if(state=="Shoot" || state=="SuperShoot")animator.speed=1;
 
         if (state == currentState) return;
