@@ -425,6 +425,7 @@ GameObject:
   m_Component:
   - component: {fileID: 102471146}
   - component: {fileID: 102471145}
+  - component: {fileID: 102471147}
   m_Layer: 0
   m_Name: Cheer Camera
   m_TagString: MainCamera
@@ -498,6 +499,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &102471147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 102471144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &115452431
 GameObject:
   m_ObjectHideFlags: 0
@@ -5403,7 +5448,7 @@ GameObject:
   - component: {fileID: 1000326188}
   - component: {fileID: 1000326187}
   m_Layer: 0
-  m_Name: "DUNGEON \u2014 roofless arena placeholder"
+  m_Name: DUNGEON
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5478,12 +5523,12 @@ MonoBehaviour:
   circleIndicator: {fileID: 1708031353}
   rectangleIndicator: {fileID: 679377060}
   rockMaterial: {fileID: 2100000, guid: 6f160d10c7192a14093cb0f2f6fcb6fa, type: 2}
-  boulderPrefab: {fileID: 0}
+  boulderPrefab: {fileID: 357689984326628659, guid: 19c5ba1347154e64aa03b6ad6e9a74f4, type: 3}
   movesPerImp: 6
   keyPickup: {fileID: 1962210474}
   door: {fileID: 225616074}
   doorCamera: {fileID: 1464629464}
-  bossTheme: {fileID: 0}
+  bossTheme: {fileID: 8300000, guid: cb48a30ff47a7b342a731cce7d6a68a0, type: 3}
   heavenlyDoorMusic: {fileID: 8300000, guid: 3800063470992d244ae1b3818421797c, type: 3}
   statusText: {fileID: 313999424}
   rescueCenter: {fileID: 1030259448}
