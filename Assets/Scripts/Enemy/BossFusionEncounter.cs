@@ -15,6 +15,25 @@ public class BossFusionEncounter : MonoBehaviour
     public GameObject bossPrefab;
     [Range(1,200)] public int impCount=120;
     public Material fusionFogMaterial;
+    [Header("Custom fusion VFX — leave empty for existing fog")]
+    public GameObject impSpawnVfx;
+    [Tooltip("Optional second effect, played together with Imp Spawn Vfx.")]
+    public GameObject impSpawnVfx2;
+    public GameObject mergeVfxPrefab, revealVfx;
+    public float vfxLifetime=6;
+    private GameObject customMergeVfx;
+    [Header("Boss death explosion cutscene")]
+    public GameObject deathBurstVfx, deathExplosionVfx;
+    public AudioClip deathExplosionSound;
+    public Transform deathCameraShot;
+    public float deathBuildSeconds=2;
+    public float deathExplosionHold=1.2f;
+    public float deathShake=.45f;
+    [Range(0,1)] public float deathFlashAlpha=.45f;
+    private GameObject deathBody,deathFlash;
+    private bool deathSequenceRunning;
+    public float deathExplosionScale=6;
+    public float deathBurstScale=1.5f;
     private FusionCloud fusionCloud;
     public int bossHealth=750;
     public float impSpeed=12;
@@ -23,6 +42,14 @@ public class BossFusionEncounter : MonoBehaviour
     public Camera fusionCamera;
     public float panSeconds=1.5f;
     public float revealSeconds=2;
+    [Header("Fusion camera drama")]
+    [Min(0)] public float mergeShake=.1f;
+    [Min(0)] public float revealShake=.22f;
+    [Range(0,10)] public float mergeZoomDegrees=3;
+    private bool cameraDrama;
+    private Vector3 dramaPosition;
+    private Quaternion dramaRotation;
+    private float originalFov,mergeProgress,revealTime=-1;
     [Header("Cutscene audio")]
     public AudioClip mergingSound;
     [Range(0,1)] public float mergingGain=.7f;
@@ -48,7 +75,7 @@ public class BossFusionEncounter : MonoBehaviour
     private static void ResetState(){IsEncounterActive=IsCutsceneActive=false;}
     private void Awake()
     {
-        if(fusionCamera!=null){fusionCamera.enabled=false;var retro=fusionCamera.GetComponent<RetroCamera>();if(retro!=null)retro.enabled=false;}
+        if(fusionCamera!=null){originalFov=fusionCamera.fieldOfView;fusionCamera.enabled=false;var retro=fusionCamera.GetComponent<RetroCamera>();if(retro!=null)retro.enabled=false;}
         mergeSource=gameObject.AddComponent<AudioSource>();mergeSource.playOnAwake=false;mergeSource.loop=true;
         roarSource=gameObject.AddComponent<AudioSource>();roarSource.playOnAwake=false;
         themeSource=gameObject.AddComponent<AudioSource>();themeSource.playOnAwake=false;themeSource.loop=true;
@@ -62,6 +89,23 @@ public class BossFusionEncounter : MonoBehaviour
         if(mergePoint==null || fusionCamera==null || impVisualPrefab==null || impSpawns==null || impSpawns.Length==0)return;
         if(health.GetComponent<PlayerUnstuck>()?.IsRecovering==true)return;
         Started=true;player=health.transform;StartCoroutine(Fuse());
+    }
+    // Developer shortcut: bypass island progression without marking any waves complete.
+    public bool StartFromTestCube(PlayerHealth health)
+    {
+        if(Started || !isActiveAndEnabled || health==null || health.currentHealth<=0 || Time.timeScale<=0)return false;
+        if(mergePoint==null || fusionCamera==null || impVisualPrefab==null || bossPrefab==null || impSpawns==null || impSpawns.Length==0)return false;
+        if(health.GetComponent<PlayerUnstuck>()?.IsRecovering==true)return false;
+        Vector3 direction=mergePoint.position-transform.position;direction.y=0;
+        NavMeshHit landing;
+        if(!NavMesh.SamplePosition(transform.position+direction.normalized*4,out landing,8,NavMesh.AllAreas))return false;
+        var controller=health.GetComponent<CharacterController>();bool wasEnabled=controller!=null&&controller.enabled;
+        if(wasEnabled)controller.enabled=false;
+        health.transform.position=landing.position+Vector3.up*.2f;
+        if(direction.sqrMagnitude>.01f)health.transform.rotation=Quaternion.LookRotation(direction);
+        if(wasEnabled)controller.enabled=true;
+        var movement=health.GetComponent<PlayerMovement>();if(movement!=null)movement.ResetAfterRecovery();
+        Started=true;player=health.transform;StartCoroutine(Fuse());return true;
     }
     private IEnumerator Fuse()
     {
@@ -81,30 +125,34 @@ public class BossFusionEncounter : MonoBehaviour
         }
         fusionCamera.enabled=true;var cutRetro=fusionCamera.GetComponent<RetroCamera>();if(cutRetro!=null)cutRetro.enabled=true;
         yield return Pan(shotPosition,shotRotation);
+        dramaPosition=fusionCamera.transform.position;dramaRotation=fusionCamera.transform.rotation;cameraDrama=true;mergeProgress=0;revealTime=-1;
         mergeSource.clip=mergingSound;if(mergingSound!=null)mergeSource.Play();
         Vector3 target=Sample(mergePoint.position);
         fusionCloud=new GameObject("Growing fusion fog").AddComponent<FusionCloud>();fusionCloud.transform.position=target+Vector3.up*5;fusionCloud.Initialize(fusionFogMaterial);
+        if(mergeVfxPrefab!=null){Destroy(fusionCloud.gameObject);fusionCloud=null;customMergeVfx=Instantiate(mergeVfxPrefab,target,Quaternion.identity);}
         for(int i=0;i<impCount;i++)
         {
             var marker=impSpawns[i%impSpawns.Length];if(marker==null)continue;
             Vector2 jitter=Random.insideUnitCircle*1.5f;
             Vector3 position=Sample(marker.position+new Vector3(jitter.x,0,jitter.y));
             var go=Instantiate(impVisualPrefab,position,marker.rotation);go.name="Fusion imp "+(i+1);go.SetActive(true);
-            var runner=go.AddComponent<FusionImpRunner>();runner.Begin(target,impSpeed);runners.Add(runner);SpawnFog.Poof(position);
+            var runner=go.AddComponent<FusionImpRunner>();runner.Begin(target,impSpeed);runners.Add(runner);PlayImpSpawnVfx(position);
             if(spawnSpacing>0)yield return new WaitForSeconds(spawnSpacing);
         }
         bool waiting=true;
         while(waiting){waiting=false;foreach(var runner in runners)if(runner!=null&&!runner.Arrived){waiting=true;break;}yield return null;}
         foreach(var runner in runners)if(runner!=null)Destroy(runner.gameObject);runners.Clear();
         if(fusionCloud!=null){fusionCloud.SetProgress(1);fusionCloud.Finish();fusionCloud=null;}
+        if(customMergeVfx!=null){Destroy(customMergeVfx);customMergeVfx=null;}
         mergeSource.Stop();
-        SpawnFog.Poof(target,12);
+        PlayVfx(revealVfx,target,12);mergeProgress=1;revealTime=Time.time;
         var body=Instantiate(bossPrefab,target,Quaternion.identity);body.SetActive(true);Boss=body.GetComponent<EnemyHealth>();if(Boss==null)Boss=body.AddComponent<EnemyHealth>();Boss.SetFullHealth(bossHealth);
         // The placeholder is invulnerable during its introduction; normal hits resume with control.
         foreach(var collider in body.GetComponentsInChildren<Collider>())collider.enabled=false;
         roarSource.clip=fusionRoar;roarSource.volume=roarGain*(audioManager!=null?audioManager.SfxVolume:.8f);if(fusionRoar!=null)roarSource.Play();
         themeSource.clip=bossTheme;if(bossTheme!=null)themeSource.Play();
         yield return new WaitForSeconds(Mathf.Max(revealSeconds,fusionRoar!=null?Mathf.Min(fusionRoar.length,8):0));
+        StopCameraDrama();
         if(playerCamera!=null)yield return Pan(playerCamera.transform.position,playerCamera.transform.rotation);
         RestoreControl();
         foreach(var collider in body.GetComponentsInChildren<Collider>())collider.enabled=true;
@@ -113,25 +161,105 @@ public class BossFusionEncounter : MonoBehaviour
     private Vector3 Sample(Vector3 point){NavMeshHit hit;return NavMesh.SamplePosition(point,out hit,8,NavMesh.AllAreas)?hit.position:point;}
     private IEnumerator Pan(Vector3 position,Quaternion rotation)
     {
-        Vector3 from=fusionCamera.transform.position;Quaternion facing=fusionCamera.transform.rotation;
-        for(float t=0;t<panSeconds;t+=Time.deltaTime){float f=Mathf.SmoothStep(0,1,t/Mathf.Max(.01f,panSeconds));fusionCamera.transform.SetPositionAndRotation(Vector3.Lerp(from,position,f),Quaternion.Slerp(facing,rotation,f));yield return null;}
+        Vector3 from=fusionCamera.transform.position;Quaternion facing=fusionCamera.transform.rotation;float startFov=fusionCamera.fieldOfView;
+        for(float t=0;t<panSeconds;t+=Time.deltaTime){float f=Mathf.SmoothStep(0,1,t/Mathf.Max(.01f,panSeconds));fusionCamera.transform.SetPositionAndRotation(Vector3.Lerp(from,position,f),Quaternion.Slerp(facing,rotation,f));fusionCamera.fieldOfView=Mathf.Lerp(startFov,originalFov,f);yield return null;}
         fusionCamera.transform.SetPositionAndRotation(position,rotation);
     }
     private void Update()
     {
-        if(fusionCloud!=null){int arrived=0;foreach(var runner in runners)if(runner==null||runner.Arrived)arrived++;fusionCloud.SetProgress((float)arrived/Mathf.Max(1,impCount));}
+        if(fusionCloud!=null){int arrived=0;foreach(var runner in runners)if(runner==null||runner.Arrived)arrived++;mergeProgress=(float)arrived/Mathf.Max(1,impCount);fusionCloud.SetProgress(mergeProgress);}
         if(mergeSource!=null)mergeSource.volume=mergingGain*(audioManager!=null?audioManager.SfxVolume:.8f);
         if(themeSource!=null)themeSource.volume=themeGain*(audioManager!=null?audioManager.MusicVolume:.7f)*(Time.timeScale>0?1:0);
         if(!Started || Defeated || IsCutsceneActive || Boss==null)return;
         if(Boss.IsDead || !Boss.gameObject.activeInHierarchy)
         {
-            Defeated=true;IsEncounterActive=false;PlayerCheer.CelebrateBoss();if(finalMistDoor!=null)finalMistDoor.SetActive(false);
-            themeSource.Stop();if(audioManager!=null)audioManager.SetCinematicMusicDucked(false);
+            Defeated=true;StartCoroutine(DeathExplosion());
         }
+    }
+    private void PlayImpSpawnVfx(Vector3 position)
+    {
+        if(impSpawnVfx==null && impSpawnVfx2==null){SpawnFog.Poof(position,1);return;}
+        if(impSpawnVfx!=null)PlayVfx(impSpawnVfx,position,1);
+        if(impSpawnVfx2!=null)PlayVfx(impSpawnVfx2,position,1);
+    }
+    private void PlayVfx(GameObject prefab,Vector3 position,float fallbackSize,float scale=1)
+    {
+        if(prefab==null){SpawnFog.Poof(position,fallbackSize);return;}
+        var effect=Instantiate(prefab,position,Quaternion.identity);effect.transform.localScale*=scale;Destroy(effect,Mathf.Max(.1f,vfxLifetime));
+    }
+    private IEnumerator DeathExplosion()
+    {
+        IsCutsceneActive=true;deathSequenceRunning=true;StopCameraDrama();
+        themeSource.Stop();if(audioManager!=null)audioManager.SetCinematicMusicDucked(true);
+        Vector3 center=Boss.transform.position+Vector3.up*9;
+        var renderers=Boss.GetComponentsInChildren<Renderer>(true);
+        if(renderers.Length>0){var bounds=renderers[0].bounds;foreach(var r in renderers)bounds.Encapsulate(r.bounds);center=bounds.center;}
+        // Keep only the defeated boss's appearance during the explosion buildup.
+        deathBody=Instantiate(Boss.gameObject,Boss.transform.position,Boss.transform.rotation);deathBody.SetActive(false);deathBody.name="Defeated boss cinematic visual";
+        foreach(var b in deathBody.GetComponentsInChildren<MonoBehaviour>(true))Destroy(b);
+        foreach(var c in deathBody.GetComponentsInChildren<Collider>(true))c.enabled=false;
+        foreach(var a in deathBody.GetComponentsInChildren<NavMeshAgent>(true))a.enabled=false;
+        foreach(var a in deathBody.GetComponentsInChildren<Animator>(true))a.enabled=false;
+        var bar=deathBody.transform.Find("Healthbar");if(bar!=null)bar.gameObject.SetActive(false);
+        foreach(var b in player.GetComponentsInChildren<MonoBehaviour>())
+            if(b.enabled&&(b is PlayerMovement||b is MouseLook||b is Gun||b is PlayerUnstuck||b is ShootCameraShake)){disabled.Add(b);b.enabled=false;}
+        foreach(var pause in FindObjectsByType<PauseManager>(FindObjectsSortMode.None))if(pause.enabled){disabled.Add(pause);pause.enabled=false;}
+        hud=GameObject.Find("PlayerUI");if(hud!=null){hudWasActive=hud.activeSelf;hud.SetActive(false);}
+        playerCamera=Camera.main;
+        if(playerCamera!=null){cameraWasEnabled=playerCamera.enabled;playerRetro=playerCamera.GetComponent<RetroCamera>();retroWasEnabled=playerRetro!=null&&playerRetro.enabled;if(playerRetro!=null)playerRetro.enabled=false;playerCamera.enabled=false;fusionCamera.transform.SetPositionAndRotation(playerCamera.transform.position,playerCamera.transform.rotation);}
+        fusionCamera.enabled=true;var retro=fusionCamera.GetComponent<RetroCamera>();if(retro!=null)retro.enabled=true;
+        yield return null;deathBody.SetActive(true);
+        Vector3 towardPlayer=player.position-center;towardPlayer.y=0;if(towardPlayer.sqrMagnitude<1)towardPlayer=Vector3.back;
+        Vector3 shot=deathCameraShot!=null?deathCameraShot.position:center+towardPlayer.normalized*30+Vector3.up*8;
+        Quaternion facing=deathCameraShot!=null?deathCameraShot.rotation:Quaternion.LookRotation(center-shot);
+        yield return Pan(shot,facing);
+        Vector3 bodyScale=deathBody.transform.localScale;float nextBurst=0;
+        for(float t=0;t<Mathf.Max(.1f,deathBuildSeconds);t+=Time.deltaTime)
+        {
+            float f=t/Mathf.Max(.1f,deathBuildSeconds);
+            deathBody.transform.localScale=bodyScale*(1+.12f*f);
+            if(t>=nextBurst){PlayVfx(deathBurstVfx,center+Random.insideUnitSphere*5,2,deathBurstScale);nextBurst=t+.3f;}
+            fusionCamera.transform.SetPositionAndRotation(shot+Random.insideUnitSphere*deathShake*.3f*f,facing);
+            fusionCamera.fieldOfView=originalFov-4*f;yield return null;
+        }
+        PlayVfx(deathExplosionVfx,center,16,deathExplosionScale);Destroy(deathBody);deathBody=null;
+        if(deathExplosionSound!=null){roarSource.volume=audioManager!=null?audioManager.SfxVolume:1;roarSource.PlayOneShot(deathExplosionSound);}
+        deathFlash=new GameObject("Boss explosion flash",typeof(Canvas));var canvas=deathFlash.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=2000;
+        var flashObject=new GameObject("Flash",typeof(RectTransform),typeof(UnityEngine.UI.Image));flashObject.transform.SetParent(deathFlash.transform,false);var flash=flashObject.GetComponent<UnityEngine.UI.Image>();flash.raycastTarget=false;
+        flash.rectTransform.anchorMin=Vector2.zero;flash.rectTransform.anchorMax=Vector2.one;flash.rectTransform.offsetMin=flash.rectTransform.offsetMax=Vector2.zero;
+        for(float t=0;t<Mathf.Max(.3f,deathExplosionHold);t+=Time.deltaTime)
+        {
+            float strength=Mathf.Clamp01(1-t/.8f);fusionCamera.transform.SetPositionAndRotation(shot+Random.insideUnitSphere*deathShake*strength,facing*Quaternion.Euler(0,0,Mathf.Sin(t*55)*strength));
+            flash.color=new Color(1,.85f,.55f,deathFlashAlpha*Mathf.Clamp01(1-t/.3f));yield return null;
+        }
+        Destroy(deathFlash);deathFlash=null;deathSequenceRunning=false;
+        if(playerCamera!=null)yield return Pan(playerCamera.transform.position,playerCamera.transform.rotation);
+        RestoreControl();IsCutsceneActive=false;IsEncounterActive=false;
+        if(finalMistDoor!=null)finalMistDoor.SetActive(false);
+        if(audioManager!=null)audioManager.SetCinematicMusicDucked(false);
+        PlayerCheer.CelebrateBoss();
+    }
+    private void LateUpdate()
+    {
+        if(deathSequenceRunning)return;
+        if(!cameraDrama || fusionCamera==null || Time.timeScale<=0)return;
+        float kick=revealTime<0?0:Mathf.Clamp01(1-(Time.time-revealTime)/.8f);
+        float amount=revealTime<0?mergeShake*Mathf.Lerp(.15f,1,mergeProgress):revealShake*kick;
+        float t=Time.time*18;
+        float x=(Mathf.PerlinNoise(t,3)-.5f)*2,y=(Mathf.PerlinNoise(7,t)-.5f)*2;
+        fusionCamera.transform.SetPositionAndRotation(dramaPosition+dramaRotation*new Vector3(x,y*.65f,0)*amount,dramaRotation*Quaternion.Euler(y*amount*2,x*amount, x*amount*4));
+        float zoom=originalFov-mergeZoomDegrees*Mathf.SmoothStep(0,1,mergeProgress);
+        fusionCamera.fieldOfView=Mathf.Lerp(fusionCamera.fieldOfView,zoom,1-Mathf.Exp(-4*Time.deltaTime));
+    }
+    private void StopCameraDrama()
+    {
+        if(cameraDrama && fusionCamera!=null)fusionCamera.transform.SetPositionAndRotation(dramaPosition,dramaRotation);
+        cameraDrama=false;
     }
     private void RestoreControl()
     {
-        if(fusionCamera!=null){fusionCamera.enabled=false;var retro=fusionCamera.GetComponent<RetroCamera>();if(retro!=null)retro.enabled=false;}
+        StopCameraDrama();
+        if(fusionCamera!=null){fusionCamera.fieldOfView=originalFov;fusionCamera.enabled=false;var retro=fusionCamera.GetComponent<RetroCamera>();if(retro!=null)retro.enabled=false;}
         if(playerCamera!=null)playerCamera.enabled=cameraWasEnabled;if(playerRetro!=null)playerRetro.enabled=retroWasEnabled;
         foreach(var b in disabled)if(b!=null)b.enabled=true;disabled.Clear();
         if(hud!=null)hud.SetActive(hudWasActive);
@@ -139,6 +267,9 @@ public class BossFusionEncounter : MonoBehaviour
     private void OnDisable()
     {
         if(!Started)return;
+        if(customMergeVfx!=null)Destroy(customMergeVfx);
+        if(deathBody!=null)Destroy(deathBody);if(deathFlash!=null)Destroy(deathFlash);
+        deathSequenceRunning=false;
         if(fusionCloud!=null)Destroy(fusionCloud.gameObject);
         StopAllCoroutines();RestoreControl();IsCutsceneActive=IsEncounterActive=false;
         foreach(var runner in runners)if(runner!=null)Destroy(runner.gameObject);runners.Clear();

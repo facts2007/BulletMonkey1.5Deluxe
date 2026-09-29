@@ -7,6 +7,8 @@ public class PlayerHealth : MonoBehaviour
     [Header("Health")]
     public int maxHealth = 100;
     public int currentHealth;
+    public bool HasEscaped {get;private set;}
+    public bool Escape(string scene){if(HasEscaped)return true;if(!Application.CanStreamedLevelBeLoaded(scene))return false;HasEscaped=true;GameSceneFlow.Load(scene);return true;}
 
     [Header("UI References")]
     public RectTransform healthBar;
@@ -44,6 +46,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
+        if(HasEscaped)return;
         if(BossFusionEncounter.IsCutsceneActive || DungeonEncounter.IsCutsceneActive || PlayerCheer.IsCutsceneActive)return;
         var rescue=GetComponent<PlayerUnstuck>();if(rescue!=null && rescue.IsRecovering)return;
         currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
@@ -92,7 +95,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void Die()
     {
-        if (GameSceneFlow.IsLoading) return;
+        if (HasEscaped || GameSceneFlow.IsLoading) return;
         currentHealth = 0;
         GameSceneFlow.Load("DeathScene");
     }

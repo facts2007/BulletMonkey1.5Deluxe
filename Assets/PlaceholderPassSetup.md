@@ -36,3 +36,20 @@ Scrap HUD is right-aligned inside the screen with room for six digits. Moneycube
 - DungeonEncounter has a Boulder Prefab slot; when empty, the existing sphere rock is used. Imp Prefab is separate.
 - HealingBananaPickup uses the normal banaan model, spins/bounces with loot, heals 20 HP without exceeding maximum, and drops from enemies with 15% probability. Full-health players leave it available for later.
 - 18 focused integration checks passed. Final visual inspection verified the corrected cheer pose, monkey image, dedicated camera, and return to gameplay.
+
+## Final boss merge and boat fix
+- BossController from the classmate's Boss test scene remains the shared attack controller. Its warning shapes, randomized timing, target calculation, ground queries, and independent rain loop are reused by the fusion boss and the test scene.
+- Giant Slam: 30 impact damage, then three walking supply imps launch from the impact. Each guarantees 30 ammo on death.
+- Imp Scattershot: six spinning imp projectiles, each marked with a landing circle, explode for 20 damage within radius 3. They do not become walking enemies.
+- Forward Push: line warning, 5 damage, short collision-aware backward shove.
+- Passive rain: 3-5 explosive imps per burst, randomized 7-12 second delay, launch from above the boss, separate from the main attack timer. All settings remain editable on BossController.
+- Island 3's miniboss spawns an imp every 15 seconds while alive. Each gives 30 ammo. Reinforcements count toward remaining wave enemies.
+- The regular boat trigger overlaps the drowning volume. A valid boat touch now takes priority, including when water processes the overlap first; escaped players cannot subsequently trigger the death scene.
+- 18 integration checks passed, including real 15-second timing, imp/ammo counts, projectile spin and cleanup, push damage/displacement, and water-first boat contact reaching Ending 1.
+
+## Custom final-boss VFX and death cinematic
+- BossController on the fusion boss prefab exposes Slam Impact Vfx, Imp Explosion Vfx, Imp Landing Vfx, Imp Trail Vfx, and Custom Vfx Lifetime. Existing per-attack Timer End Effect, passive effect, indicator material/color, and projectile model slots remain available.
+- BossFusionEncounter exposes Imp Spawn Vfx, Merge Vfx Prefab, Reveal Vfx, Death Burst Vfx, Death Explosion Vfx, lifetimes, death effect scales, and explosion sound. Empty effect slots retain procedural fog. A custom merge prefab replaces the procedural growing cloud.
+- Death sequence: camera pans to the boss; small bursts and shake build up; large explosion and a brief warm flash remove the boss; camera returns, then the player cheer begins. The exit opens after the explosion. Player damage is blocked during the cinematic.
+- Optional Death Camera Shot sets an authored position/rotation; otherwise the shot is computed facing the boss from the player's side. Timing, shake, flash intensity, and explosion sizes are Inspector fields.
+- Existing vfx_Explosion is assigned as the default death burst and explosion. Eleven Play Mode checks passed for ordering, invulnerability, visual retention/removal, flash cleanup, gate opening, and camera/control restoration.

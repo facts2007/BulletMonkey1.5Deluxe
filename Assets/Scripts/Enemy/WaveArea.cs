@@ -39,6 +39,10 @@ public class WaveArea : MonoBehaviour
     public GameObject bossPrefab;
     [Tooltip("Optional boss-wave music. Gameplay music pauses and resumes at the same position.")]
     public AudioClip minibossTheme;
+    [Header("Miniboss ammo reinforcements")]
+    public GameObject minibossImpPrefab;
+    public float minibossImpInterval=15;
+    public int minibossImpAmmo=30;
     private bool ownsMinibossMusic;
     [Min(0)] public float intermissionSeconds = 12;
     public bool IsCombatActive {get;private set;}
@@ -147,9 +151,22 @@ public class WaveArea : MonoBehaviour
                 UpdateCount(count - i - 1);
                 if (spawnInterval > 0) yield return new WaitForSeconds(spawnInterval);
             }
+            EnemyHealth miniboss=waves[index].bossWave && living.Count>0?living[0]:null;
+            float nextImp=Time.time+minibossImpInterval;
             // Completion is checked only after spawning; unrelated kills never reduce this count.
             do
             {
+                if(miniboss!=null && !miniboss.IsDead && miniboss.gameObject.activeInHierarchy && minibossImpPrefab!=null && Time.time>=nextImp)
+                {
+                    var point=points[UnityEngine.Random.Range(0,points.Length)];
+                    var staging=new GameObject("Miniboss imp staging");staging.SetActive(false);
+                    var imp=Instantiate(minibossImpPrefab,point.position,point.rotation,staging.transform);
+                    var nav=imp.GetComponent<UnityEngine.AI.NavMeshAgent>();if(nav!=null)nav.enabled=false;
+                    var drop=imp.GetComponent<Enemy>();if(drop!=null){drop.ammoDropChance=1;drop.minAmmoAmount=drop.maxAmmoAmount=minibossImpAmmo;}
+                    var melee=imp.GetComponent<MeleeEnemy>();if(melee!=null)melee.chaseRange=200;
+                    ScaleEnemy(imp);imp.name="Island 3 ammo reinforcement";imp.transform.SetParent(null,true);imp.SetActive(true);Destroy(staging);
+                    living.Add(imp.GetComponent<EnemyHealth>());SpawnFog.Poof(point.position);nextImp=Time.time+Mathf.Max(1,minibossImpInterval);
+                }
                 UpdateCount(0);
                 yield return new WaitForSeconds(.1f);
             } while (enemiesRemaining > 0);

@@ -26,6 +26,8 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController controller;
     private Vector3 velocity;
+    private Vector3 pushVelocity;
+    public void ApplyPush(Vector3 direction,float speed){direction.y=0;pushVelocity=direction.normalized*speed;}
     private Vector3 currentVelocity;
     private bool isGrounded;
     public bool IsGrounded => isGrounded;
@@ -35,7 +37,7 @@ public class PlayerMovement : MonoBehaviour
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
     private bool stompAvailable = true;
-    public void ResetAfterRecovery(){velocity=Vector3.zero;currentVelocity=Vector3.zero;}
+    public void ResetAfterRecovery(){pushVelocity=Vector3.zero;velocity=Vector3.zero;currentVelocity=Vector3.zero;}
 
     private void Awake()
     {
@@ -49,6 +51,7 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
         HandleJump();
         ApplyGravity();
+        if(pushVelocity.sqrMagnitude>.01f){controller.Move(pushVelocity*Time.deltaTime);pushVelocity=Vector3.MoveTowards(pushVelocity,Vector3.zero,24*Time.deltaTime);}
     }
 
     private void HandleGroundedState()

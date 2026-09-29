@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 
+public enum BossAttackEffect { Damage, SlamImps, ScatterImps, Push }
+
 public enum IndicatorShape
 {
     Box,
@@ -17,6 +19,8 @@ public enum AttackTarget
 public class BossAttack
 {
     public string attackName = "Attack";
+    public BossAttackEffect effect;
+    public float pushSpeed=14;
     public IndicatorShape shape = IndicatorShape.Circle;
 
     [Tooltip("Circle only. Boxes always stretch from the boss to the player")]
@@ -102,6 +106,22 @@ public class BossController : MonoBehaviour
     private const float IndicatorThickness = 0.02f;
     private const float GroundRayLength = 200f;
 
+    [Header("Imp attacks")]
+    [Header("Custom VFX — empty slots use the existing fog")]
+    public GameObject slamImpactVfx, impExplosionVfx, impLandingVfx, impTrailVfx;
+    public float customVfxLifetime=5;
+    public GameObject walkingImpPrefab;
+    public GameObject thrownImpVisualPrefab;
+    public int slamImpCount=3;
+    public int slamImpAmmo=30;
+    public int scatterCount=6;
+    public float scatterRadius=7;
+    public float impExplosionRadius=3;
+    public int impExplosionDamage=20;
+    private readonly System.Collections.Generic.List<GameObject> transientObjects=new System.Collections.Generic.List<GameObject>();
+    private EnemyHealth health;
+    private bool stopped;
+    private bool CanFight => isActive && !stopped && (health==null || !health.IsDead) && !BossFusionEncounter.IsCutsceneActive && !PlayerCheer.IsCutsceneActive;
     private Transform player;
     private PlayerHealth playerHealth;
     private Material runtimeMaterial;
@@ -112,12 +132,14 @@ public class BossController : MonoBehaviour
 
     private void Start()
     {
+        health=GetComponent<EnemyHealth>();
         StartCoroutine(CinematicAttackLoop());
     }
 
     private void Update()
     {
-        if (!isActive) return;
+        if(health!=null && health.IsDead){Shutdown();return;}
+        if (!CanFight) return;
 
         if (player == null)
         {
@@ -127,7 +149,7 @@ public class BossController : MonoBehaviour
 
         if (!player.gameObject.activeInHierarchy) return;
 
-        FaceTarget();
+        if(!isAttacking)FaceTarget();
 
         if (isAttacking || attacks.Length == 0) return;
 
@@ -187,11 +209,34 @@ public class BossController : MonoBehaviour
 
         yield return new WaitForSeconds(area.timer);
 
+        if(!CanFight){isAttacking=false;yield break;}
+        if(attack.effect==BossAttackEffect.ScatterImps)
+        {
+            for(int i=0;i<scatterCount;i++)
+            {
+                Vector2 offset=Random.insideUnitCircle*scatterRadius;
+                Vector3 target=area.center+new Vector3(offset.x,0,offset.y);target.y=GetGroundY(target.x,target.z,target.y)+indicatorHeightOffset;
+                StartCoroutine(ImpImpact(target,transform.position+Vector3.up*cinematicProjectileLaunchHeight,1.5f,impExplosionRadius,impExplosionDamage,false));
+            }
+        }
+        if(attack.effect==BossAttackEffect.SlamImps)
+        {
+            PlayVfx(slamImpactVfx,area.center,4);
+            for(int i=0;i<slamImpCount;i++)
+            {
+                Vector3 offset=Quaternion.Euler(0,i*360f/Mathf.Max(1,slamImpCount),0)*Vector3.forward*3;
+                Vector3 target=area.center+offset;UnityEngine.AI.NavMeshHit nav;
+                if(UnityEngine.AI.NavMesh.SamplePosition(target,out nav,5,UnityEngine.AI.NavMesh.AllAreas))target=nav.position;
+                target.y=GetGroundY(target.x,target.z,target.y);
+                StartCoroutine(ImpImpact(target,area.center+Vector3.up,.75f,0,0,true));
+            }
+        }
         SpawnTimerEndEffect(attack.timerEndEffect, attack.effectLifetime, area.center, area.rotation);
 
-        if (player != null && player.gameObject.activeInHierarchy && IsPlayerInside(attack.shape, area))
+        if (attack.effect!=BossAttackEffect.ScatterImps && player != null && player.gameObject.activeInHierarchy && IsPlayerInside(attack.shape, area))
         {
             DamagePlayer(attack.damage);
+            if(attack.effect==BossAttackEffect.Push){var movement=player.GetComponent<PlayerMovement>();if(movement!=null)movement.ApplyPush(area.rotation*Vector3.forward,attack.pushSpeed);}
         }
 
         if (currentIndicator != null)
@@ -320,7 +365,7 @@ public class BossController : MonoBehaviour
     {
         while (true)
         {
-            if (!cinematicEnabled || !isActive || player == null || !player.gameObject.activeInHierarchy)
+            if (!cinematicEnabled || !CanFight || player == null || !player.gameObject.activeInHierarchy)
             {
                 yield return null;
                 continue;
@@ -344,54 +389,55 @@ public class BossController : MonoBehaviour
 
     private IEnumerator PerformCinematicImpact()
     {
-        Vector3 target = GetRandomCinematicPosition();
-        float referenceY = Mathf.Max(transform.position.y, player.position.y);
-        target.y = GetGroundY(target.x, target.z, referenceY) + indicatorHeightOffset;
-
-        float timer = Random.Range(cinematicMinTimer, cinematicMaxTimer);
-        float sizePercentage = Mathf.InverseLerp(cinematicMinTimer, cinematicMaxTimer, timer);
-
-        float radius = Mathf.Lerp(cinematicRadiusMin, cinematicRadiusMax, sizePercentage);
-        float projectileScale = Mathf.Lerp(cinematicProjectileMinScale, cinematicProjectileMaxScale, sizePercentage);
-        float effectScale = Mathf.Lerp(cinematicEffectMinScale, cinematicEffectMaxScale, sizePercentage);
-
-        AttackArea area = new AttackArea();
-        area.center = target;
-        area.rotation = Quaternion.identity;
-        area.radius = radius;
-
-        GameObject indicator = CreateIndicator(IndicatorShape.Circle, area, cinematicIndicatorColor);
-
-        GameObject projectile = null;
-        if (cinematicProjectilePrefab != null)
-        {
-            Vector3 startPosition = transform.position + Vector3.up * cinematicProjectileLaunchHeight;
-            projectile = Instantiate(cinematicProjectilePrefab, startPosition, Quaternion.identity);
-            projectile.transform.localScale *= projectileScale;
-
-            StartCoroutine(MoveProjectileArc(projectile, startPosition, target, timer, cinematicProjectileArcHeight));
-        }
-
-        yield return new WaitForSeconds(timer);
-
-        SpawnTimerEndEffect(cinematicTimerEndEffect, cinematicEffectLifetime, target, Quaternion.identity, effectScale);
-
-        if (player != null && player.gameObject.activeInHierarchy && IsPlayerInside(IndicatorShape.Circle, area))
-        {
-            DamagePlayer(cinematicDamage);
-        }
-
-        if (indicator != null)
-        {
-            Destroy(indicator);
-        }
-
-        if (projectile != null)
-        {
-            Destroy(projectile);
-        }
+        Vector3 target=GetRandomCinematicPosition();
+        target.y=GetGroundY(target.x,target.z,Mathf.Max(transform.position.y,player.position.y))+indicatorHeightOffset;
+        float timer=Random.Range(cinematicMinTimer,cinematicMaxTimer);
+        float fraction=Mathf.InverseLerp(cinematicMinTimer,cinematicMaxTimer,timer);
+        yield return ImpImpact(target,transform.position+Vector3.up*cinematicProjectileLaunchHeight,timer,Mathf.Lerp(cinematicRadiusMin,cinematicRadiusMax,fraction),cinematicDamage,false);
     }
-
+    private IEnumerator ImpImpact(Vector3 target,Vector3 launch,float duration,float radius,int damage,bool walking)
+    {
+        var area=new AttackArea{center=target,rotation=Quaternion.identity,radius=radius};
+        GameObject indicator=walking?null:CreateIndicator(IndicatorShape.Circle,area,cinematicIndicatorColor);
+        if(indicator!=null)transientObjects.Add(indicator);
+        var visual=thrownImpVisualPrefab!=null?thrownImpVisualPrefab:cinematicProjectilePrefab;
+        GameObject projectile=null;
+        if(visual!=null)
+        {
+            var staging=new GameObject("Imp projectile staging");staging.SetActive(false);
+            projectile=Instantiate(visual,launch,Quaternion.identity,staging.transform);projectile.name=walking?"Slam supply imp airborne":"Explosive imp airborne";
+            foreach(var behaviour in projectile.GetComponentsInChildren<MonoBehaviour>())behaviour.enabled=false;
+            foreach(var agent in projectile.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())agent.enabled=false;
+            foreach(var collider in projectile.GetComponentsInChildren<Collider>())collider.enabled=false;
+            foreach(var rb in projectile.GetComponentsInChildren<Rigidbody>()){rb.isKinematic=true;rb.useGravity=false;}
+            if(impTrailVfx!=null){var trail=Instantiate(impTrailVfx,projectile.transform);trail.transform.localPosition=Vector3.zero;}
+            projectile.transform.SetParent(null,true);projectile.SetActive(true);Destroy(staging);transientObjects.Add(projectile);
+            yield return MoveProjectileArc(projectile,launch,target,duration,walking?3:cinematicProjectileArcHeight);
+        }
+        else yield return new WaitForSeconds(duration);
+        if(CanFight)
+        {
+            PlayVfx(walking?impLandingVfx:impExplosionVfx,target,walking?1:2);
+            if(walking)SpawnWalkingImp(target,slamImpAmmo);
+            else
+            {
+                SpawnTimerEndEffect(cinematicTimerEndEffect,cinematicEffectLifetime,target,Quaternion.identity);
+                if(player!=null&&IsPlayerInside(IndicatorShape.Circle,area))DamagePlayer(damage);
+            }
+        }
+        if(projectile!=null){transientObjects.Remove(projectile);Destroy(projectile);}
+        if(indicator!=null){transientObjects.Remove(indicator);Destroy(indicator);}
+    }
+    public GameObject SpawnWalkingImp(Vector3 position,int ammo)
+    {
+        if(walkingImpPrefab==null)return null;
+        var staging=new GameObject("Supply imp staging");staging.SetActive(false);
+        var imp=Instantiate(walkingImpPrefab,position,Quaternion.identity,staging.transform);
+        var nav=imp.GetComponent<UnityEngine.AI.NavMeshAgent>();if(nav!=null)nav.enabled=false;
+        var enemy=imp.GetComponent<Enemy>();if(enemy!=null){enemy.ammoDropChance=1;enemy.minAmmoAmount=enemy.maxAmmoAmount=ammo;}
+        var melee=imp.GetComponent<MeleeEnemy>();if(melee!=null)melee.chaseRange=200;
+        imp.name="Boss supply imp ("+ammo+" ammo)";imp.transform.SetParent(null,true);imp.SetActive(true);Destroy(staging);return imp;
+    }
     private Vector3 GetRandomCinematicPosition()
     {
         if (cinematicAreaCenter != null)
@@ -425,6 +471,7 @@ public class BossController : MonoBehaviour
             position.y += Mathf.Sin(progress * Mathf.PI) * arcHeight;
 
             projectile.transform.position = position;
+            projectile.transform.Rotate(new Vector3(240,330,170)*Time.deltaTime,Space.Self);
 
             yield return null;
         }
@@ -465,39 +512,15 @@ public class BossController : MonoBehaviour
     {
         if (other.transform.IsChildOf(transform)) return true;
         if (other.GetComponentInParent<PlayerHealth>() != null) return true;
-        if (other.GetComponentInParent<Enemy>() != null) return true;
+        if (other.GetComponentInParent<Enemy>() != null || other.GetComponentInParent<EnemyHealth>()!=null) return true;
 
         return false;
     }
 
     private GameObject CreateIndicator(IndicatorShape shape, AttackArea area, Color color)
     {
-        bool isCircle = shape == IndicatorShape.Circle;
-        GameObject indicator = GameObject.CreatePrimitive(isCircle ? PrimitiveType.Cylinder : PrimitiveType.Cube);
-
-        Destroy(indicator.GetComponent<Collider>());
-
-        indicator.name = isCircle ? "BossIndicator_Circle" : "BossIndicator_Box";
-        indicator.transform.SetPositionAndRotation(area.center, area.rotation);
-
-        if (isCircle)
-        {
-            float diameter = area.radius * 2f;
-            indicator.transform.localScale = new Vector3(diameter, IndicatorThickness, diameter);
-        }
-        else
-        {
-            indicator.transform.localScale = new Vector3(area.boxSize.x, IndicatorThickness, area.boxSize.y);
-        }
-
-        Renderer indicatorRenderer = indicator.GetComponent<Renderer>();
-        indicatorRenderer.sharedMaterial = GetIndicatorMaterial(color);
-        indicatorRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        indicatorRenderer.receiveShadows = false;
-
-        return indicator;
+        return GroundAttackIndicator.Create(shape==IndicatorShape.Circle,area.center,area.rotation,area.radius,area.boxSize,GetIndicatorMaterial(color),transform,indicatorHeightOffset);
     }
-
     private Material GetIndicatorMaterial(Color color)
     {
         if (indicatorMaterial != null) return indicatorMaterial;
@@ -527,6 +550,7 @@ public class BossController : MonoBehaviour
     private bool IsPlayerInside(IndicatorShape shape, AttackArea area)
     {
         Vector3 offset = player.position - area.center;
+        if(Mathf.Abs(offset.y)>4)return false;
         offset.y = 0f;
 
         if (shape == IndicatorShape.Circle)
@@ -546,11 +570,17 @@ public class BossController : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    private void PlayVfx(GameObject prefab,Vector3 position,float fallbackSize)
     {
-        if (currentIndicator != null)
-        {
-            Destroy(currentIndicator);
-        }
+        if(prefab==null){SpawnFog.Poof(position,fallbackSize);return;}
+        var effect=Instantiate(prefab,position,Quaternion.identity);Destroy(effect,Mathf.Max(.1f,customVfxLifetime));
     }
+    private void Shutdown()
+    {
+        if(stopped)return;stopped=true;StopAllCoroutines();
+        if(currentIndicator!=null)Destroy(currentIndicator);
+        foreach(var item in transientObjects)if(item!=null)Destroy(item);transientObjects.Clear();
+    }
+    private void OnDisable(){Shutdown();}
+    private void OnDestroy(){Shutdown();if(runtimeMaterial!=null)Destroy(runtimeMaterial);}
 }

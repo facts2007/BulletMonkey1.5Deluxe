@@ -333,6 +333,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2484301027730245078}
   - component: {fileID: 4243149536480700600}
+  - component: {fileID: 4329431109204554918}
   m_Layer: 0
   m_Name: ImptronPlaceholder
   m_TagString: Untagged
@@ -378,6 +379,109 @@ MonoBehaviour:
   healthBarSpeed: 8
   redBarSpeed: 4
   redBarDelay: 0.5
+--- !u!114 &4329431109204554918
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5126708561480991949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 988c1205bb9f4eb409d9a6b5703195bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossController
+  isActive: 1
+  timeBetweenAttacks: 3
+  turnSpeed: 5
+  randomOrder: 1
+  attacks:
+  - attackName: Giant Slam
+    effect: 1
+    pushSpeed: 14
+    shape: 1
+    target: 0
+    minTimer: 1.5
+    maxTimer: 2.5
+    circleRadiusMin: 8
+    circleRadiusMax: 11
+    boxWidthMin: 2
+    boxWidthMax: 4
+    extraLengthBehindPlayer: 3
+    distanceFromBoss: 6
+    damage: 30
+    timerEndEffect: {fileID: 0}
+    effectLifetime: 3
+  - attackName: Imp Scattershot
+    effect: 2
+    pushSpeed: 14
+    shape: 1
+    target: 0
+    minTimer: 1.2
+    maxTimer: 1.8
+    circleRadiusMin: 7
+    circleRadiusMax: 7
+    boxWidthMin: 2
+    boxWidthMax: 4
+    extraLengthBehindPlayer: 3
+    distanceFromBoss: 6
+    damage: 0
+    timerEndEffect: {fileID: 0}
+    effectLifetime: 3
+  - attackName: Forward Push
+    effect: 3
+    pushSpeed: 14
+    shape: 0
+    target: 0
+    minTimer: 1.2
+    maxTimer: 2
+    circleRadiusMin: 2.5
+    circleRadiusMax: 4
+    boxWidthMin: 5
+    boxWidthMax: 7
+    extraLengthBehindPlayer: 3
+    distanceFromBoss: 6
+    damage: 5
+    timerEndEffect: {fileID: 0}
+    effectLifetime: 3
+  indicatorColor: {r: 1, g: 0, b: 0, a: 0.4}
+  indicatorMaterial: {fileID: 2100000, guid: b06d960eeb43c5c4cab49feb0f7394aa, type: 2}
+  groundRayStartHeight: 5
+  indicatorHeightOffset: 0.03
+  walkingImpPrefab: {fileID: 3595957089953483482, guid: 102177761f3672b41a9e43c1aa0e11eb, type: 3}
+  thrownImpVisualPrefab: {fileID: 5527943319742431379, guid: 8c9919c3be1638b4ab579a8e84a9a5a7, type: 3}
+  slamImpCount: 3
+  slamImpAmmo: 30
+  scatterCount: 6
+  scatterRadius: 7
+  impExplosionRadius: 3
+  impExplosionDamage: 20
+  cinematicEnabled: 1
+  cinematicMinTimer: 1.5
+  cinematicMaxTimer: 2.5
+  cinematicMinAmountPerWave: 3
+  cinematicMaxAmountPerWave: 5
+  cinematicMinWaveDelay: 7
+  cinematicMaxWaveDelay: 12
+  cinematicStaggerMin: 0.1
+  cinematicStaggerMax: 0.3
+  cinematicRadiusMin: 2
+  cinematicRadiusMax: 4
+  cinematicDamage: 15
+  cinematicIndicatorColor: {r: 1, g: 0, b: 0, a: 0.4}
+  cinematicProjectilePrefab: {fileID: 5527943319742431379, guid: 8c9919c3be1638b4ab579a8e84a9a5a7, type: 3}
+  cinematicProjectileArcHeight: 8
+  cinematicProjectileLaunchHeight: 20
+  cinematicProjectileMinScale: 0.75
+  cinematicProjectileMaxScale: 1.5
+  cinematicAreaCenter: {fileID: 0}
+  cinematicAreaSize: {x: 40, y: 40}
+  cinematicMinDistanceFromPlayer: 3
+  cinematicMaxDistanceFromPlayer: 16
+  cinematicTimerEndEffect: {fileID: 0}
+  cinematicEffectLifetime: 3
+  cinematicEffectMinScale: 0.75
+  cinematicEffectMaxScale: 1.5
 --- !u!1 &5541323590894040352
 GameObject:
   m_ObjectHideFlags: 0
