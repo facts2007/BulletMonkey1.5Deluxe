@@ -23,27 +23,16 @@ public class BossAttack
     public AttackTarget target = AttackTarget.PlayerPosition;
 
     [Header("Fairness / Timing")]
-    [Tooltip("Minimum warning time, regardless of size.")]
     public float minTimer = 1.25f;
-
-    [Tooltip("Maximum warning time, regardless of size.")]
     public float maxTimer = 2.75f;
 
     [Header("Circle Size")]
-    [Tooltip("Circle only. Minimum radius.")]
     public float circleRadiusMin = 2.5f;
-
-    [Tooltip("Circle only. Maximum radius.")]
     public float circleRadiusMax = 4f;
 
     [Header("Box Size")]
-    [Tooltip("Box only. Minimum width of the beam.")]
     public float boxWidthMin = 2f;
-
-    [Tooltip("Box only. Maximum width of the beam.")]
     public float boxWidthMax = 4f;
-
-    [Tooltip("Box only. How far the beam reaches past the player.")]
     public float extraLengthBehindPlayer = 3f;
 
     [Tooltip("Circle only, when Target is InFrontOfBoss.")]
@@ -53,8 +42,6 @@ public class BossAttack
 
     [Tooltip("Optional. Spawned when the timer runs out.")]
     public GameObject timerEndEffect;
-
-    [Tooltip("Seconds before the effect is destroyed. 0 = never.")]
     public float effectLifetime = 3f;
 }
 
@@ -76,84 +63,24 @@ public class BossController : MonoBehaviour
             attackName = "Circle Slam",
             shape = IndicatorShape.Circle,
             target = AttackTarget.PlayerPosition,
-
             minTimer = 1.25f,
             maxTimer = 2.75f,
-
             circleRadiusMin = 2.5f,
             circleRadiusMax = 4f,
-
             damage = 20
         },
-
         new BossAttack
         {
             attackName = "Beam",
             shape = IndicatorShape.Box,
-
             minTimer = 1.5f,
             maxTimer = 2.75f,
-
             boxWidthMin = 2f,
             boxWidthMax = 4f,
-
             extraLengthBehindPlayer = 3f,
-
             damage = 30
         }
     };
-
-    // =========================================================
-    // CINEMATIC FALLING ATTACK
-    // =========================================================
-
-    [Header("Cinematic Falling Attack")]
-
-    [Tooltip("GameObject that falls from above and creates the cinematic impact.")]
-    public GameObject cinematicEffectPrefab;
-
-    [Tooltip("Minimum number of falling effects in one wave.")]
-    public int cinematicMinAmount = 1;
-
-    [Tooltip("Maximum number of falling effects in one wave.")]
-    public int cinematicMaxAmount = 3;
-
-    [Tooltip("Minimum delay before another wave starts.")]
-    public float cinematicMinWaveDelay = 1f;
-
-    [Tooltip("Maximum delay before another wave starts.")]
-    public float cinematicMaxWaveDelay = 3f;
-
-    [Tooltip("How high above the boss the effect starts.")]
-    public float cinematicSpawnHeight = 25f;
-
-    [Tooltip("Minimum distance from the player for a target.")]
-    public float cinematicMinDistance = 4f;
-
-    [Tooltip("Maximum distance from the player for a target.")]
-    public float cinematicMaxDistance = 18f;
-
-    [Tooltip("How long the falling effect takes to reach the ground.")]
-    public float cinematicFallDuration = 0.45f;
-
-    [Header("Cinematic Effect Size")]
-
-    [Tooltip("Smallest possible effect scale.")]
-    public float cinematicMinSize = 0.75f;
-
-    [Tooltip("Largest possible effect scale.")]
-    public float cinematicMaxSize = 1.15f;
-
-    [Tooltip("Extra size multiplier for the largest impact.")]
-    public float cinematicLargeExplosionMultiplier = 1.15f;
-
-    [Header("Cinematic Spawn Area")]
-
-    [Tooltip("Optional. If assigned, targets are randomly selected inside this area's X/Z size.")]
-    public Transform cinematicAreaCenter;
-
-    [Tooltip("X/Z size of the cinematic spawn area when using cinematicAreaCenter.")]
-    public Vector2 cinematicAreaSize = new Vector2(40f, 40f);
 
     [Header("Indicator Look")]
     public Color indicatorColor = new Color(1f, 0f, 0f, 0.4f);
@@ -169,7 +96,6 @@ public class BossController : MonoBehaviour
         public Quaternion rotation;
         public float radius;
         public Vector2 boxSize;
-
         public float timer;
     }
 
@@ -180,21 +106,18 @@ public class BossController : MonoBehaviour
     private PlayerHealth playerHealth;
     private Material runtimeMaterial;
     private GameObject currentIndicator;
-
     private float attackTimer;
     private int nextAttackIndex;
     private bool isAttacking;
 
     private void Start()
     {
-        // Start the cinematic attack independently.
-        StartCoroutine(CinematicFallingAttackLoop());
+        StartCoroutine(CinematicAttackLoop());
     }
 
     private void Update()
     {
-        if (!isActive)
-            return;
+        if (!isActive) return;
 
         if (player == null)
         {
@@ -202,984 +125,432 @@ public class BossController : MonoBehaviour
             return;
         }
 
-        if (!player.gameObject.activeInHierarchy)
-            return;
+        if (!player.gameObject.activeInHierarchy) return;
 
         FaceTarget();
 
-        if (isAttacking || attacks.Length == 0)
-            return;
+        if (isAttacking || attacks.Length == 0) return;
 
         attackTimer += Time.deltaTime;
-
         if (attackTimer >= timeBetweenAttacks)
         {
             attackTimer = 0f;
-            StartCoroutine(
-                PerformAttack(
-                    PickAttack()
-                )
-            );
+            StartCoroutine(PerformAttack(PickAttack()));
         }
     }
 
     private void FindPlayer()
     {
-        GameObject found =
-            GameObject.FindGameObjectWithTag("Player");
-
-        if (found == null)
-            return;
+        GameObject found = GameObject.FindGameObjectWithTag("Player");
+        if (found == null) return;
 
         player = found.transform;
-
-        playerHealth =
-            found.GetComponent<PlayerHealth>();
-
+        playerHealth = found.GetComponent<PlayerHealth>();
         if (playerHealth == null)
         {
-            playerHealth =
-                found.GetComponentInParent<PlayerHealth>();
+            playerHealth = found.GetComponentInParent<PlayerHealth>();
         }
     }
 
     private void FaceTarget()
     {
-        Vector3 direction =
-            player.position -
-            transform.position;
-
+        Vector3 direction = player.position - transform.position;
         direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) return;
 
-        if (direction.sqrMagnitude < 0.001f)
-            return;
-
-        Quaternion targetRotation =
-            Quaternion.LookRotation(direction);
-
-        transform.rotation =
-            Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                turnSpeed * Time.deltaTime
-            );
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
     }
 
     private BossAttack PickAttack()
     {
         if (randomOrder)
         {
-            return attacks[
-                Random.Range(
-                    0,
-                    attacks.Length
-                )
-            ];
+            return attacks[Random.Range(0, attacks.Length)];
         }
 
-        BossAttack attack =
-            attacks[nextAttackIndex];
-
-        nextAttackIndex =
-            (nextAttackIndex + 1) %
-            attacks.Length;
-
+        BossAttack attack = attacks[nextAttackIndex];
+        nextAttackIndex = (nextAttackIndex + 1) % attacks.Length;
         return attack;
     }
 
     // =========================================================
-    // NORMAL ATTACK SYSTEM
+    // MAIN ATTACK SYSTEM (circle/box, unchanged from before)
     // =========================================================
 
-    private IEnumerator PerformAttack(
-        BossAttack attack
-    )
+    private IEnumerator PerformAttack(BossAttack attack)
     {
         isAttacking = true;
 
-        AttackArea area =
-            CalculateArea(attack);
+        AttackArea area = CalculateArea(attack);
+        currentIndicator = CreateIndicator(attack.shape, area, indicatorColor);
 
-        currentIndicator =
-            CreateIndicator(
-                attack,
-                area
-            );
+        yield return new WaitForSeconds(area.timer);
 
-        yield return new WaitForSeconds(
-            area.timer
-        );
+        SpawnTimerEndEffect(attack.timerEndEffect, attack.effectLifetime, area.center, area.rotation);
 
-        SpawnTimerEndEffect(
-            attack,
-            area
-        );
-
-        if (
-            player != null &&
-            player.gameObject.activeInHierarchy &&
-            IsPlayerInside(
-                attack,
-                area
-            )
-        )
+        if (player != null && player.gameObject.activeInHierarchy && IsPlayerInside(attack.shape, area))
         {
-            DamagePlayer(
-                attack.damage
-            );
+            DamagePlayer(attack.damage);
         }
 
         if (currentIndicator != null)
         {
-            Destroy(
-                currentIndicator
-            );
-
+            Destroy(currentIndicator);
             currentIndicator = null;
         }
 
         isAttacking = false;
     }
 
-    private AttackArea CalculateArea(
-        BossAttack attack
-    )
+    private AttackArea CalculateArea(BossAttack attack)
     {
-        AttackArea area =
-            new AttackArea();
+        AttackArea area = new AttackArea();
+        Vector3 bossPosition = transform.position;
+        Vector3 flatBossPosition = new Vector3(bossPosition.x, 0f, bossPosition.z);
 
-        Vector3 bossPosition =
-            transform.position;
-
-        Vector3 flatBossPosition =
-            new Vector3(
-                bossPosition.x,
-                0f,
-                bossPosition.z
-            );
-
-        Vector3 toPlayer =
-            player.position -
-            bossPosition;
-
+        Vector3 toPlayer = player.position - bossPosition;
         toPlayer.y = 0f;
+        float distanceToPlayer = toPlayer.magnitude;
+        Vector3 directionToPlayer = distanceToPlayer > 0.001f ? toPlayer / distanceToPlayer : Vector3.forward;
 
-        float distanceToPlayer =
-            toPlayer.magnitude;
-
-        Vector3 directionToPlayer =
-            distanceToPlayer > 0.001f
-                ? toPlayer / distanceToPlayer
-                : Vector3.forward;
-
-        if (
-            attack.shape ==
-            IndicatorShape.Box
-        )
+        if (attack.shape == IndicatorShape.Box)
         {
-            float length =
-                distanceToPlayer +
-                attack.extraLengthBehindPlayer;
+            float length = distanceToPlayer + attack.extraLengthBehindPlayer;
+            float width = Random.Range(Mathf.Min(attack.boxWidthMin, attack.boxWidthMax), Mathf.Max(attack.boxWidthMin, attack.boxWidthMax));
 
-            float width =
-                Random.Range(
-                    Mathf.Min(
-                        attack.boxWidthMin,
-                        attack.boxWidthMax
-                    ),
-                    Mathf.Max(
-                        attack.boxWidthMin,
-                        attack.boxWidthMax
-                    )
-                );
+            area.center = flatBossPosition + directionToPlayer * (length * 0.5f);
+            area.rotation = Quaternion.LookRotation(directionToPlayer);
+            area.boxSize = new Vector2(width, length);
 
-            area.center =
-                flatBossPosition +
-                directionToPlayer *
-                (length * 0.5f);
-
-            area.rotation =
-                Quaternion.LookRotation(
-                    directionToPlayer
-                );
-
-            area.boxSize =
-                new Vector2(
-                    width,
-                    length
-                );
-
-            float sizePercentage =
-                Mathf.InverseLerp(
-                    attack.boxWidthMin,
-                    attack.boxWidthMax,
-                    width
-                );
-
-            area.timer =
-                Mathf.Lerp(
-                    attack.minTimer,
-                    attack.maxTimer,
-                    sizePercentage
-                );
+            float sizePercentage = Mathf.InverseLerp(attack.boxWidthMin, attack.boxWidthMax, width);
+            area.timer = Mathf.Lerp(attack.minTimer, attack.maxTimer, sizePercentage);
         }
-        else if (
-            attack.target ==
-            AttackTarget.InFrontOfBoss
-        )
+        else if (attack.target == AttackTarget.InFrontOfBoss)
         {
-            Vector3 forward =
-                transform.forward;
-
+            Vector3 forward = transform.forward;
             forward.y = 0f;
             forward.Normalize();
 
-            area.center =
-                flatBossPosition +
-                forward *
-                attack.distanceFromBoss;
-
-            area.rotation =
-                Quaternion.LookRotation(
-                    forward
-                );
-
-            area.radius =
-                GetRandomCircleRadius(
-                    attack
-                );
-
-            area.timer =
-                CalculateCircleTimer(
-                    attack,
-                    area.radius
-                );
+            area.center = flatBossPosition + forward * attack.distanceFromBoss;
+            area.rotation = Quaternion.LookRotation(forward);
+            area.radius = GetRandomCircleRadius(attack);
+            area.timer = CalculateCircleTimer(attack, area.radius);
         }
         else
         {
-            area.center =
-                new Vector3(
-                    player.position.x,
-                    0f,
-                    player.position.z
-                );
-
-            area.rotation =
-                Quaternion.LookRotation(
-                    directionToPlayer
-                );
-
-            area.radius =
-                GetRandomCircleRadius(
-                    attack
-                );
-
-            area.timer =
-                CalculateCircleTimer(
-                    attack,
-                    area.radius
-                );
+            area.center = new Vector3(player.position.x, 0f, player.position.z);
+            area.rotation = Quaternion.LookRotation(directionToPlayer);
+            area.radius = GetRandomCircleRadius(attack);
+            area.timer = CalculateCircleTimer(attack, area.radius);
         }
 
-        float referenceY =
-            Mathf.Max(
-                bossPosition.y,
-                player.position.y
-            );
-
-        area.center.y =
-            GetGroundY(
-                area.center.x,
-                area.center.z,
-                referenceY
-            ) +
-            indicatorHeightOffset;
-
-        area.timer =
-            Mathf.Clamp(
-                area.timer,
-                attack.minTimer,
-                attack.maxTimer
-            );
+        float referenceY = Mathf.Max(bossPosition.y, player.position.y);
+        area.center.y = GetGroundY(area.center.x, area.center.z, referenceY) + indicatorHeightOffset;
+        area.timer = Mathf.Clamp(area.timer, attack.minTimer, attack.maxTimer);
 
         return area;
     }
 
-    private float GetRandomCircleRadius(
-        BossAttack attack
-    )
+    private float GetRandomCircleRadius(BossAttack attack)
     {
-        return Random.Range(
-            Mathf.Min(
-                attack.circleRadiusMin,
-                attack.circleRadiusMax
-            ),
-            Mathf.Max(
-                attack.circleRadiusMin,
-                attack.circleRadiusMax
-            )
-        );
+        return Random.Range(Mathf.Min(attack.circleRadiusMin, attack.circleRadiusMax), Mathf.Max(attack.circleRadiusMin, attack.circleRadiusMax));
     }
 
-    private float CalculateCircleTimer(
-        BossAttack attack,
-        float radius
-    )
+    private float CalculateCircleTimer(BossAttack attack, float radius)
     {
-        float sizePercentage =
-            Mathf.InverseLerp(
-                attack.circleRadiusMin,
-                attack.circleRadiusMax,
-                radius
-            );
-
-        return Mathf.Lerp(
-            attack.minTimer,
-            attack.maxTimer,
-            sizePercentage
-        );
+        float sizePercentage = Mathf.InverseLerp(attack.circleRadiusMin, attack.circleRadiusMax, radius);
+        return Mathf.Lerp(attack.minTimer, attack.maxTimer, sizePercentage);
     }
 
     // =========================================================
-    // CINEMATIC FALLING ATTACK
+    // CINEMATIC ATTACK SYSTEM (fully independent, own timer,
+    // own damage check - never touches isAttacking, attackTimer,
+    // or the attacks[] array above)
     // =========================================================
 
-    private IEnumerator CinematicFallingAttackLoop()
+    [Header("Cinematic Attack (Independent System)")]
+    public bool cinematicEnabled = true;
+
+    [Header("Cinematic Timing")]
+    [Tooltip("Timer is randomized in this range, then everything below scales off where it falls")]
+    public float cinematicMinTimer = 1f;
+    public float cinematicMaxTimer = 2.5f;
+    public int cinematicMinAmountPerWave = 1;
+    public int cinematicMaxAmountPerWave = 3;
+    public float cinematicMinWaveDelay = 1f;
+    public float cinematicMaxWaveDelay = 3f;
+    public float cinematicStaggerMin = 0.1f;
+    public float cinematicStaggerMax = 0.3f;
+
+    [Header("Cinematic Damage Circle")]
+    [Tooltip("Radius scales with timer length: short timer = small circle, long timer = big circle")]
+    public float cinematicRadiusMin = 2f;
+    public float cinematicRadiusMax = 4f;
+    public int cinematicDamage = 15;
+    public Color cinematicIndicatorColor = new Color(1f, 0f, 0f, 0.4f);
+
+    [Header("Cinematic Leaping Projectile")]
+    [Tooltip("Optional. Thrown from the boss and lands exactly when this impact's timer ends")]
+    public GameObject cinematicProjectilePrefab;
+    public float cinematicProjectileArcHeight = 8f;
+    public float cinematicProjectileLaunchHeight = 2f;
+
+    [Tooltip("Projectile's own scale multiplier. Also scales with timer length, same as the radius")]
+    public float cinematicProjectileMinScale = 0.75f;
+    public float cinematicProjectileMaxScale = 1.5f;
+
+    [Header("Cinematic Targeting")]
+    [Tooltip("Optional. If assigned, impacts land randomly inside this area's X/Z size instead of around the player")]
+    public Transform cinematicAreaCenter;
+    public Vector2 cinematicAreaSize = new Vector2(40f, 40f);
+    public float cinematicMinDistanceFromPlayer = 4f;
+    public float cinematicMaxDistanceFromPlayer = 18f;
+
+    [Header("Cinematic Optional Effect")]
+    [Tooltip("Optional. If empty, nothing spawns and nothing errors")]
+    public GameObject cinematicTimerEndEffect;
+    public float cinematicEffectLifetime = 3f;
+
+    [Tooltip("Effect's own scale multiplier. Also scales with timer length, same as the radius")]
+    public float cinematicEffectMinScale = 0.75f;
+    public float cinematicEffectMaxScale = 1.5f;
+
+    private IEnumerator CinematicAttackLoop()
     {
         while (true)
         {
-            // If the boss is inactive, don't spawn cinematic effects.
-            if (!isActive)
+            if (!cinematicEnabled || !isActive || player == null || !player.gameObject.activeInHierarchy)
             {
                 yield return null;
                 continue;
             }
 
-            // Make sure we know where the player is.
-            if (player == null)
+            int amount = Random.Range(cinematicMinAmountPerWave, cinematicMaxAmountPerWave + 1);
+
+            for (int i = 0; i < amount; i++)
             {
-                FindPlayer();
+                StartCoroutine(PerformCinematicImpact());
 
-                yield return new WaitForSeconds(0.25f);
-                continue;
-            }
-
-            if (
-                cinematicEffectPrefab != null &&
-                player.gameObject.activeInHierarchy
-            )
-            {
-                // Random amount of impacts in this wave.
-                int amount =
-                    Random.Range(
-                        cinematicMinAmount,
-                        cinematicMaxAmount + 1
-                    );
-
-                for (int i = 0; i < amount; i++)
+                if (i < amount - 1)
                 {
-                    SpawnCinematicImpact();
-
-                    // Multiple impacts are staggered very slightly.
-                    if (amount > 1 && i < amount - 1)
-                    {
-                        float staggerDelay =
-                            CalculateCinematicStagger(
-                                amount
-                            );
-
-                        yield return new WaitForSeconds(
-                            staggerDelay
-                        );
-                    }
+                    yield return new WaitForSeconds(Random.Range(cinematicStaggerMin, cinematicStaggerMax));
                 }
             }
 
-            // Wait before the next group.
-            float waveDelay =
-                Random.Range(
-                    cinematicMinWaveDelay,
-                    cinematicMaxWaveDelay
-                );
-
-            yield return new WaitForSeconds(
-                waveDelay
-            );
+            yield return new WaitForSeconds(Random.Range(cinematicMinWaveDelay, cinematicMaxWaveDelay));
         }
     }
 
-    private float CalculateCinematicStagger(
-        int amount
-    )
+    private IEnumerator PerformCinematicImpact()
     {
-        // More impacts = faster succession.
+        Vector3 target = GetRandomCinematicPosition();
+        float referenceY = Mathf.Max(transform.position.y, player.position.y);
+        target.y = GetGroundY(target.x, target.z, referenceY) + indicatorHeightOffset;
 
-        if (amount <= 1)
-            return 0f;
+        float timer = Random.Range(cinematicMinTimer, cinematicMaxTimer);
+        float sizePercentage = Mathf.InverseLerp(cinematicMinTimer, cinematicMaxTimer, timer);
 
-        if (amount == 2)
-            return Random.Range(
-                0.15f,
-                0.40f
-            );
+        float radius = Mathf.Lerp(cinematicRadiusMin, cinematicRadiusMax, sizePercentage);
+        float projectileScale = Mathf.Lerp(cinematicProjectileMinScale, cinematicProjectileMaxScale, sizePercentage);
+        float effectScale = Mathf.Lerp(cinematicEffectMinScale, cinematicEffectMaxScale, sizePercentage);
 
-        if (amount == 3)
-            return Random.Range(
-                0.10f,
-                0.30f
-            );
+        AttackArea area = new AttackArea();
+        area.center = target;
+        area.rotation = Quaternion.identity;
+        area.radius = radius;
 
-        return Random.Range(
-            0.05f,
-            0.20f
-        );
-    }
+        GameObject indicator = CreateIndicator(IndicatorShape.Circle, area, cinematicIndicatorColor);
 
-    private void SpawnCinematicImpact()
-    {
-        if (
-            cinematicEffectPrefab == null ||
-            player == null
-        )
+        GameObject projectile = null;
+        if (cinematicProjectilePrefab != null)
         {
-            return;
+            Vector3 startPosition = transform.position + Vector3.up * cinematicProjectileLaunchHeight;
+            projectile = Instantiate(cinematicProjectilePrefab, startPosition, Quaternion.identity);
+            projectile.transform.localScale *= projectileScale;
+
+            StartCoroutine(MoveProjectileArc(projectile, startPosition, target, timer, cinematicProjectileArcHeight));
         }
 
-        // -----------------------------------------------------
-        // FIND RANDOM TARGET
-        // -----------------------------------------------------
+        yield return new WaitForSeconds(timer);
 
-        Vector3 targetPosition =
-            GetRandomCinematicTarget();
+        SpawnTimerEndEffect(cinematicTimerEndEffect, cinematicEffectLifetime, target, Quaternion.identity, effectScale);
 
-        // Find the actual ground underneath it.
-        float referenceY =
-            Mathf.Max(
-                transform.position.y,
-                player.position.y
-            );
+        if (player != null && player.gameObject.activeInHierarchy && IsPlayerInside(IndicatorShape.Circle, area))
+        {
+            DamagePlayer(cinematicDamage);
+        }
 
-        float groundY =
-            GetGroundY(
-                targetPosition.x,
-                targetPosition.z,
-                referenceY
-            );
+        if (indicator != null)
+        {
+            Destroy(indicator);
+        }
 
-        targetPosition.y =
-            groundY +
-            indicatorHeightOffset;
-
-        // -----------------------------------------------------
-        // RANDOM SIZE
-        // -----------------------------------------------------
-
-        float randomSize =
-            Random.Range(
-                cinematicMinSize,
-                cinematicMaxSize
-            );
-
-        // -----------------------------------------------------
-        // START POSITION
-        // -----------------------------------------------------
-
-        Vector3 startPosition =
-            transform.position +
-            Vector3.up *
-            cinematicSpawnHeight;
-
-        // Give each projectile a tiny random horizontal
-        // offset from the boss so they don't all originate
-        // from exactly the same point.
-        startPosition +=
-            new Vector3(
-                Random.Range(-1.5f, 1.5f),
-                0f,
-                Random.Range(-1.5f, 1.5f)
-            );
-
-        // -----------------------------------------------------
-        // CREATE EFFECT
-        // -----------------------------------------------------
-
-        GameObject effect =
-            Instantiate(
-                cinematicEffectPrefab,
-                startPosition,
-                Quaternion.identity
-            );
-
-        // Bigger randomized area = bigger explosion/effect.
-        effect.transform.localScale =
-            effect.transform.localScale *
-            randomSize;
-
-        // Start the actual falling motion.
-        StartCoroutine(
-            MoveCinematicEffect(
-                effect,
-                startPosition,
-                targetPosition,
-                randomSize
-            )
-        );
+        if (projectile != null)
+        {
+            Destroy(projectile);
+        }
     }
 
-    private Vector3 GetRandomCinematicTarget()
+    private Vector3 GetRandomCinematicPosition()
     {
-        // If a specific map area has been assigned,
-        // use that area.
-
         if (cinematicAreaCenter != null)
         {
-            Vector3 center =
-                cinematicAreaCenter.position;
+            Vector3 center = cinematicAreaCenter.position;
+            float halfX = cinematicAreaSize.x * 0.5f;
+            float halfZ = cinematicAreaSize.y * 0.5f;
 
-            float halfX =
-                cinematicAreaSize.x * 0.5f;
-
-            float halfZ =
-                cinematicAreaSize.y * 0.5f;
-
-            return new Vector3(
-                center.x +
-                Random.Range(
-                    -halfX,
-                    halfX
-                ),
-
-                center.y,
-
-                center.z +
-                Random.Range(
-                    -halfZ,
-                    halfZ
-                )
-            );
+            return new Vector3(center.x + Random.Range(-halfX, halfX), center.y, center.z + Random.Range(-halfZ, halfZ));
         }
 
-        // Otherwise, randomly place it around the player.
-        float angle =
-            Random.Range(
-                0f,
-                360f
-            );
+        float angle = Random.Range(0f, 360f);
+        float distance = Random.Range(cinematicMinDistanceFromPlayer, cinematicMaxDistanceFromPlayer);
+        Vector3 offset = new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad), 0f, Mathf.Sin(angle * Mathf.Deg2Rad)) * distance;
 
-        float distance =
-            Random.Range(
-                cinematicMinDistance,
-                cinematicMaxDistance
-            );
-
-        Vector3 offset =
-            new Vector3(
-                Mathf.Cos(
-                    angle * Mathf.Deg2Rad
-                ),
-                0f,
-                Mathf.Sin(
-                    angle * Mathf.Deg2Rad
-                )
-            ) * distance;
-
-        return new Vector3(
-            player.position.x + offset.x,
-            player.position.y,
-            player.position.z + offset.z
-        );
+        return new Vector3(player.position.x + offset.x, player.position.y, player.position.z + offset.z);
     }
 
-    private IEnumerator MoveCinematicEffect(
-        GameObject effect,
-        Vector3 startPosition,
-        Vector3 targetPosition,
-        float size
-    )
+    private IEnumerator MoveProjectileArc(GameObject projectile, Vector3 start, Vector3 end, float duration, float arcHeight)
     {
-        if (effect == null)
-            yield break;
-
         float elapsed = 0f;
 
-        while (
-            elapsed <
-            cinematicFallDuration
-        )
+        while (elapsed < duration)
         {
-            if (effect == null)
-                yield break;
+            if (projectile == null) yield break;
 
-            elapsed +=
-                Time.deltaTime;
+            elapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / duration);
 
-            float progress =
-                Mathf.Clamp01(
-                    elapsed /
-                    cinematicFallDuration
-                );
+            Vector3 position = Vector3.Lerp(start, end, progress);
+            position.y += Mathf.Sin(progress * Mathf.PI) * arcHeight;
 
-            // Smooth fall.
-            float smoothProgress =
-                progress *
-                progress *
-                (3f -
-                 2f *
-                 progress);
-
-            effect.transform.position =
-                Vector3.Lerp(
-                    startPosition,
-                    targetPosition,
-                    smoothProgress
-                );
+            projectile.transform.position = position;
 
             yield return null;
         }
 
-        if (effect == null)
-            yield break;
-
-        effect.transform.position =
-            targetPosition;
-
-        // Give the larger impacts a slightly bigger
-        // final scale as well.
-        if (
-            cinematicMaxSize >
-            cinematicMinSize
-        )
+        if (projectile != null)
         {
-            float normalizedSize =
-                Mathf.InverseLerp(
-                    cinematicMinSize,
-                    cinematicMaxSize,
-                    size
-                );
-
-            float explosionScale =
-                Mathf.Lerp(
-                    1f,
-                    cinematicLargeExplosionMultiplier,
-                    normalizedSize
-                );
-
-            effect.transform.localScale *=
-                explosionScale;
+            projectile.transform.position = end;
         }
-
-        // The effect is purely cinematic for now.
-        // It does NOT damage the player.
-
-        Destroy(
-            effect,
-            GetCinematicEffectLifetime(
-                effect
-            )
-        );
-    }
-
-    private float GetCinematicEffectLifetime(
-        GameObject effect
-    )
-    {
-        // Let the prefab remain visible briefly after impact.
-        // This is deliberately independent of the normal
-        // attack system.
-        ParticleSystem particleSystem =
-            effect.GetComponentInChildren<
-                ParticleSystem
-            >();
-
-        if (particleSystem != null)
-        {
-            float lifetime =
-                particleSystem.main.duration +
-                particleSystem.main.startLifetime.constantMax;
-
-            return Mathf.Max(
-                lifetime,
-                0.5f
-            );
-        }
-
-        // Fallback for ordinary GameObjects.
-        return 2f;
     }
 
     // =========================================================
-    // GROUND
+    // SHARED HELPERS (used by both systems above)
     // =========================================================
 
-    private float GetGroundY(
-        float x,
-        float z,
-        float referenceY
-    )
+    private float GetGroundY(float x, float z, float referenceY)
     {
-        Vector3 origin =
-            new Vector3(
-                x,
-                referenceY +
-                groundRayStartHeight,
-                z
-            );
+        Vector3 origin = new Vector3(x, referenceY + groundRayStartHeight, z);
+        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, groundRayStartHeight + GroundRayLength, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
 
-        RaycastHit[] hits =
-            Physics.RaycastAll(
-                origin,
-                Vector3.down,
-                groundRayStartHeight +
-                GroundRayLength,
-                Physics.DefaultRaycastLayers,
-                QueryTriggerInteraction.Ignore
-            );
-
-        float closestDistance =
-            float.MaxValue;
-
-        float groundY =
-            transform.position.y;
+        float closestDistance = float.MaxValue;
+        float groundY = transform.position.y;
 
         foreach (RaycastHit hit in hits)
         {
-            if (
-                IsIgnoredForGround(
-                    hit.collider
-                )
-            )
-            {
-                continue;
-            }
+            if (IsIgnoredForGround(hit.collider)) continue;
 
-            if (
-                hit.distance <
-                closestDistance
-            )
+            if (hit.distance < closestDistance)
             {
-                closestDistance =
-                    hit.distance;
-
-                groundY =
-                    hit.point.y;
+                closestDistance = hit.distance;
+                groundY = hit.point.y;
             }
         }
 
         return groundY;
     }
 
-    private bool IsIgnoredForGround(
-        Collider other
-    )
+    private bool IsIgnoredForGround(Collider other)
     {
-        if (
-            other.transform.IsChildOf(
-                transform
-            )
-        )
-        {
-            return true;
-        }
-
-        if (
-            other.GetComponentInParent<
-                PlayerHealth
-            >() != null
-        )
-        {
-            return true;
-        }
-
-        if (
-            other.GetComponentInParent<
-                Enemy
-            >() != null
-        )
-        {
-            return true;
-        }
+        if (other.transform.IsChildOf(transform)) return true;
+        if (other.GetComponentInParent<PlayerHealth>() != null) return true;
+        if (other.GetComponentInParent<Enemy>() != null) return true;
 
         return false;
     }
 
-    // =========================================================
-    // INDICATOR
-    // =========================================================
-
-    private GameObject CreateIndicator(
-        BossAttack attack,
-        AttackArea area
-    )
+    private GameObject CreateIndicator(IndicatorShape shape, AttackArea area, Color color)
     {
-        bool isCircle =
-            attack.shape ==
-            IndicatorShape.Circle;
+        bool isCircle = shape == IndicatorShape.Circle;
+        GameObject indicator = GameObject.CreatePrimitive(isCircle ? PrimitiveType.Cylinder : PrimitiveType.Cube);
 
-        GameObject indicator =
-            GameObject.CreatePrimitive(
-                isCircle
-                    ? PrimitiveType.Cylinder
-                    : PrimitiveType.Cube
-            );
+        Destroy(indicator.GetComponent<Collider>());
 
-        Destroy(
-            indicator.GetComponent<Collider>()
-        );
-
-        indicator.name =
-            "BossIndicator_" +
-            attack.attackName;
-
-        indicator.transform.SetPositionAndRotation(
-            area.center,
-            area.rotation
-        );
+        indicator.name = isCircle ? "BossIndicator_Circle" : "BossIndicator_Box";
+        indicator.transform.SetPositionAndRotation(area.center, area.rotation);
 
         if (isCircle)
         {
-            float diameter =
-                area.radius * 2f;
-
-            indicator.transform.localScale =
-                new Vector3(
-                    diameter,
-                    IndicatorThickness,
-                    diameter
-                );
+            float diameter = area.radius * 2f;
+            indicator.transform.localScale = new Vector3(diameter, IndicatorThickness, diameter);
         }
         else
         {
-            indicator.transform.localScale =
-                new Vector3(
-                    area.boxSize.x,
-                    IndicatorThickness,
-                    area.boxSize.y
-                );
+            indicator.transform.localScale = new Vector3(area.boxSize.x, IndicatorThickness, area.boxSize.y);
         }
 
-        Renderer indicatorRenderer =
-            indicator.GetComponent<Renderer>();
-
-        indicatorRenderer.sharedMaterial =
-            GetIndicatorMaterial();
-
-        indicatorRenderer.shadowCastingMode =
-            UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        indicatorRenderer.receiveShadows =
-            false;
+        Renderer indicatorRenderer = indicator.GetComponent<Renderer>();
+        indicatorRenderer.sharedMaterial = GetIndicatorMaterial(color);
+        indicatorRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        indicatorRenderer.receiveShadows = false;
 
         return indicator;
     }
 
-    private Material GetIndicatorMaterial()
+    private Material GetIndicatorMaterial(Color color)
     {
-        if (indicatorMaterial != null)
-            return indicatorMaterial;
+        if (indicatorMaterial != null) return indicatorMaterial;
 
         if (runtimeMaterial == null)
         {
-            runtimeMaterial =
-                new Material(
-                    Shader.Find(
-                        "Sprites/Default"
-                    )
-                );
-
-            runtimeMaterial.color =
-                indicatorColor;
+            runtimeMaterial = new Material(Shader.Find("Sprites/Default"));
         }
 
+        runtimeMaterial.color = color;
         return runtimeMaterial;
     }
 
-    private void SpawnTimerEndEffect(
-        BossAttack attack,
-        AttackArea area
-    )
+    private void SpawnTimerEndEffect(GameObject effectPrefab, float lifetime, Vector3 position, Quaternion rotation, float scale = 1f)
     {
-        if (
-            attack.timerEndEffect ==
-            null
-        )
-        {
-            return;
-        }
+        if (effectPrefab == null) return;
 
-        GameObject effect =
-            Instantiate(
-                attack.timerEndEffect,
-                area.center,
-                area.rotation
-            );
+        GameObject effect = Instantiate(effectPrefab, position, rotation);
+        effect.transform.localScale *= scale;
 
-        if (
-            attack.effectLifetime >
-            0f
-        )
+        if (lifetime > 0f)
         {
-            Destroy(
-                effect,
-                attack.effectLifetime
-            );
+            Destroy(effect, lifetime);
         }
     }
 
-    private bool IsPlayerInside(
-        BossAttack attack,
-        AttackArea area
-    )
+    private bool IsPlayerInside(IndicatorShape shape, AttackArea area)
     {
-        Vector3 offset =
-            player.position -
-            area.center;
-
+        Vector3 offset = player.position - area.center;
         offset.y = 0f;
 
-        if (
-            attack.shape ==
-            IndicatorShape.Circle
-        )
+        if (shape == IndicatorShape.Circle)
         {
-            return
-                offset.magnitude <=
-                area.radius;
+            return offset.magnitude <= area.radius;
         }
 
-        Vector3 local =
-            Quaternion.Inverse(
-                area.rotation
-            ) * offset;
-
-        return
-            Mathf.Abs(local.x) <=
-                area.boxSize.x * 0.5f
-            &&
-            Mathf.Abs(local.z) <=
-                area.boxSize.y * 0.5f;
+        Vector3 local = Quaternion.Inverse(area.rotation) * offset;
+        return Mathf.Abs(local.x) <= area.boxSize.x * 0.5f && Mathf.Abs(local.z) <= area.boxSize.y * 0.5f;
     }
 
-    private void DamagePlayer(
-        int damage
-    )
+    private void DamagePlayer(int damage)
     {
         if (playerHealth != null)
         {
-            playerHealth.TakeDamage(
-                damage
-            );
+            playerHealth.TakeDamage(damage);
         }
     }
 
     private void OnDestroy()
     {
-        if (
-            currentIndicator != null
-        )
+        if (currentIndicator != null)
         {
-            Destroy(
-                currentIndicator
-            );
+            Destroy(currentIndicator);
         }
     }
 }
