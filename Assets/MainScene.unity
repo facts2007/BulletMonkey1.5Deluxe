@@ -68614,6 +68614,10 @@ PrefabInstance:
       propertyPath: aimCamera
       value: 
       objectReference: {fileID: 1113118911}
+    - target: {fileID: 5847766487452529917, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
+      propertyPath: impactEffect
+      value: 
+      objectReference: {fileID: 3089417297071835541, guid: d6929d080c55b0e4482e34429d553383, type: 3}
     - target: {fileID: 5873873115873772604, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
       propertyPath: m_Layer
       value: 6
