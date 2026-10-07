@@ -129,11 +129,11 @@ public class DrowningSequence : MonoBehaviour
         if(voice!=null)voice.Stop();
         if(choir!=null)choir.Stop();
     }
-    public void Retry(){Time.timeScale=1;SceneManager.LoadScene(SceneManager.GetActiveScene().name);}
+    public void Retry(){GameSceneFlow.Load(SceneManager.GetActiveScene().name);}
     public void MainMenu()
     {
         Time.timeScale=1;
-        if(Application.CanStreamedLevelBeLoaded(mainMenuScene)){SceneManager.LoadScene(mainMenuScene);return;}
+        if(Application.CanStreamedLevelBeLoaded(mainMenuScene)){GameSceneFlow.Load(mainMenuScene);return;}
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying=false;
 #else

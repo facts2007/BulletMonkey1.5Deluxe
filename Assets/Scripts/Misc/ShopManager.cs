@@ -105,6 +105,7 @@ public class ShopManager : MonoBehaviour
 
     private void Update()
     {
+        if (GameSceneFlow.IsLoading) return;
         if (player == null) return;
         if(PauseManager.GameIsPaused)return;
 
@@ -140,7 +141,7 @@ public class ShopManager : MonoBehaviour
         shopOpen = true;
         if(GameAudio.Instance!=null)GameAudio.Instance.SetShopOpen(true);
 
-        if (shopPanel != null) shopPanel.SetActive(true);
+        MenuPanelMotion.Show(shopPanel);
         if (interactionPrompt != null) interactionPrompt.SetActive(false);
 
         if (playerGun != null) playerGun.enabled = false;
@@ -158,7 +159,7 @@ public class ShopManager : MonoBehaviour
         shopOpen = false;
         if(GameAudio.Instance!=null)GameAudio.Instance.SetShopOpen(false);
 
-        if (shopPanel != null) shopPanel.SetActive(false);
+        MenuPanelMotion.Hide(shopPanel);
 
         if (playerGun != null) playerGun.enabled = true;
 

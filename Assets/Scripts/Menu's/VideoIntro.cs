@@ -49,27 +49,8 @@ public class VideoIntro : MonoBehaviour
     private void ShowButtons()
     {
         if(buttonsShown)return;buttonsShown=true;
-        continueButton.gameObject.SetActive(true);
-        quitButton.gameObject.SetActive(true);
-
-        StartCoroutine(FadeIn(continueButton));
-        StartCoroutine(FadeIn(quitButton));
-    }
-
-    IEnumerator FadeIn(Button btn)
-    {
-        CanvasGroup cg = btn.GetComponent<CanvasGroup>();if(cg==null)cg=btn.gameObject.AddComponent<CanvasGroup>();
-        cg.alpha       = 0f;
-        float elapsed  = 0f;
-
-        while (elapsed < fadeDuration)
-        {
-            elapsed  += Time.deltaTime;
-            cg.alpha  = Mathf.Clamp01(elapsed / fadeDuration);
-            yield return null;
-        }
-
-        cg.alpha = 1f;
+        MenuPanelMotion.Show(continueButton.gameObject, fadeDuration);
+        MenuPanelMotion.Show(quitButton.gameObject, fadeDuration);
     }
 
     public void OnContinue()

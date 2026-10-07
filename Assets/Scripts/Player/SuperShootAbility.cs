@@ -37,7 +37,7 @@ public class SuperShootAbility : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale <= 0f) return;
+        if (Time.timeScale <= 0f || GameSceneFlow.IsLoading) return;
         // Shop interaction disables the gun. Do not spend a banana while shopping.
         if (gun == null || !gun.isActiveAndEnabled) { CancelCharge(); return; }
         Tick(Input.GetKey(activationKey), Time.deltaTime);

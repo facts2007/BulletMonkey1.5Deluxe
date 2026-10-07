@@ -23,7 +23,7 @@ public class PlayerCheer : MonoBehaviour
     public void Begin(bool cinematic)
     {
         if(IsCheering && cinematic && !IsCutsceneActive){StopAllCoroutines();Restore();}
-        if(IsCheering || Time.timeScale<=0 || BossFusionEncounter.IsCutsceneActive || DungeonEncounter.IsCutsceneActive)return;
+        if(IsCheering || Time.timeScale<=0 || GameSceneFlow.IsLoading || BossFusionEncounter.IsCutsceneActive || DungeonEncounter.IsCutsceneActive)return;
         var hp=GetComponent<PlayerHealth>();if(hp==null || hp.currentHealth<=0)return;
         var movement=GetComponent<PlayerMovement>();if(movement==null || !movement.enabled)return;
         StartCoroutine(Cheer(cinematic));
@@ -32,10 +32,10 @@ public class PlayerCheer : MonoBehaviour
     private IEnumerator Cheer(bool cinematic)
     {
         IsCheering=true;IsCutsceneActive=cinematic;nextCheer=Time.time+cheerSeconds+1;
-        foreach(var b in GetComponentsInChildren<MonoBehaviour>())
-            if(b.enabled && (b is PlayerMovement || b is MouseLook || b is Gun || b is PlayerUnstuck || b is ShootCameraShake)){suspended.Add(b);b.enabled=false;}
         if(cinematic)
         {
+            foreach(var b in GetComponentsInChildren<MonoBehaviour>())
+                if(b!=null && b.enabled && (b is PlayerMovement || b is MouseLook || b is Gun || b is PlayerUnstuck || b is ShootCameraShake)){suspended.Add(b);b.enabled=false;}
             var pause=FindFirstObjectByType<PauseManager>();if(pause!=null && pause.enabled){suspended.Add(pause);pause.enabled=false;}
             gameplayCamera=Camera.main;
             if(gameplayCamera!=null)

@@ -51,12 +51,13 @@ public class PauseManager : MonoBehaviour
 
     private void Update()
     {
+        if (GameSceneFlow.IsLoading) return;
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if(TutorialOverlay.Instance!=null && TutorialOverlay.Instance.IsOpen){TutorialOverlay.Instance.Close();return;}
             if (GameIsPaused)
             {
-                if (settingsPanel != null && settingsPanel.activeSelf) CloseSettings();
+                if (MenuPanelMotion.IsVisible(settingsPanel)) CloseSettings();
                 else Resume();
             }
             else if (Time.timeScale > 0f) Pause();
@@ -68,7 +69,7 @@ public class PauseManager : MonoBehaviour
         GameIsPaused = true;
         Time.timeScale = 0f;
 
-        if (pausePanel != null) pausePanel.SetActive(true);
+        MenuPanelMotion.Show(pausePanel);
         CloseSettings();
         if (gameAudio != null) gameAudio.SetPaused(true);
         SetEscHintVisible(false);
@@ -82,7 +83,7 @@ public class PauseManager : MonoBehaviour
         GameIsPaused = false;
         Time.timeScale = 1f;
 
-        if (pausePanel != null) pausePanel.SetActive(false);
+        MenuPanelMotion.Hide(pausePanel);
         SetEscHintVisible(true);
         if (gameAudio != null) gameAudio.SetPaused(false);
 
@@ -113,13 +114,15 @@ public class PauseManager : MonoBehaviour
         if (settingsPanel == null) return;
         if(pauseTitle!=null)pauseTitle.SetActive(false);
         SetMenuButtonsVisible(false);
-        settingsPanel.SetActive(true);
+        MenuPanelMotion.Show(settingsPanel);
     }
 
     public void CloseSettings()
     {
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-        if(pauseTitle!=null)pauseTitle.SetActive(true);
+        bool wasOpen = MenuPanelMotion.IsVisible(settingsPanel);
+        MenuPanelMotion.Hide(settingsPanel, true);
+        if (wasOpen) MenuPanelMotion.Show(pauseTitle);
+        else if(pauseTitle!=null)pauseTitle.SetActive(true);
         SetMenuButtonsVisible(true);
         PlayerPrefs.Save();
     }
@@ -127,7 +130,9 @@ public class PauseManager : MonoBehaviour
     private void SetMenuButtonsVisible(bool visible)
     {
         if (menuButtons == null) return;
-        foreach (GameObject button in menuButtons) if (button != null) button.SetActive(visible);
+        foreach (GameObject button in menuButtons)
+            if (visible) MenuPanelMotion.Show(button);
+            else MenuPanelMotion.Hide(button, true);
     }
 
     public void SetMusicVolume(float value)

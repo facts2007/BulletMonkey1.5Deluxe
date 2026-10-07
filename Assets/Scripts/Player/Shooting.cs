@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.VFX;
 using TMPro;
 
 public class Gun : MonoBehaviour
@@ -19,6 +20,8 @@ public class Gun : MonoBehaviour
     public GameObject bulletPrefab;
     public GameObject impactEffect;
     public Transform muzzlePoint;
+    [Tooltip("Played at the muzzle for every normal and super shot.")]
+    public GameObject muzzleFlarePrefab;
 
     [Header("Aiming")]
     public Camera aimCamera;
@@ -35,10 +38,16 @@ public class Gun : MonoBehaviour
 
     private float fireCooldown;
     private bool wasSuperShooting;
+    private GameObject muzzleFlareInstance;
+    private VisualEffect[] muzzleVisualEffects;
+    private ParticleSystem[] muzzleParticles;
+    private Quaternion muzzleFlareRotation;
+    private MouseLook playerLook;
 
     private void Awake()
     {
         Instance = this;
+        playerLook = GetComponentInParent<MouseLook>();
         currentAmmo = maxAmmo;
         UpdateAmmoText();
 
@@ -50,7 +59,7 @@ public class Gun : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale <= 0f) return;
+        if (Time.timeScale <= 0f || GameSceneFlow.IsLoading) return;
         fireCooldown -= Time.deltaTime;
 
         bool superShooting = superAbility != null && superAbility.IsSuperShooting;
@@ -79,6 +88,7 @@ public class Gun : MonoBehaviour
 
     private void Shoot(bool superShot = false)
     {
+        if (playerLook != null) playerLook.FaceAim();
         if (!superShot)
         {
             currentAmmo--;
@@ -111,6 +121,7 @@ public class Gun : MonoBehaviour
         if (characterAnimation != null) characterAnimation.NotifyShot();
         if (cameraShake != null) cameraShake.Kick(superShot);
         if (GameAudio.Instance != null) GameAudio.Instance.PlayShot(superShot);
+        PlayMuzzleFlare(spawnPoint, spawnRotation);
 
         float bulletSpeed = 0f;
 
@@ -138,6 +149,41 @@ public class Gun : MonoBehaviour
                 StartCoroutine(SpawnImpactAfterDelay(hit.point, hit.normal, delay));
             }
         }
+    }
+
+    private void PlayMuzzleFlare(Transform spawnPoint, Quaternion shotRotation)
+    {
+        if (muzzleFlarePrefab == null || spawnPoint == null) return;
+
+        bool created = false;
+        if (muzzleFlareInstance == null)
+        {
+            muzzleFlareInstance = Instantiate(muzzleFlarePrefab, spawnPoint);
+            muzzleFlareInstance.name = "Muzzle flare";
+            // Imported effects have demo-scene offsets; the actual shot origin wins.
+            muzzleFlareInstance.transform.localPosition = Vector3.zero;
+            muzzleVisualEffects = muzzleFlareInstance.GetComponentsInChildren<VisualEffect>(true);
+            muzzleParticles = muzzleFlareInstance.GetComponentsInChildren<ParticleSystem>(true);
+            created = true;
+        }
+
+        muzzleFlareRotation = shotRotation * muzzleFlarePrefab.transform.localRotation;
+        muzzleFlareInstance.transform.SetPositionAndRotation(spawnPoint.position, muzzleFlareRotation);
+        if (created) return; // Play-on-awake handles the first shot.
+
+        foreach (var effect in muzzleVisualEffects) if (effect != null) effect.Play();
+        foreach (var particles in muzzleParticles)
+        {
+            if (particles == null) continue;
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particles.Play(true);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // Gun animation can rotate the muzzle after Update; keep the flash along its shot.
+        if (muzzleFlareInstance != null) muzzleFlareInstance.transform.rotation = muzzleFlareRotation;
     }
 
     private IEnumerator SpawnImpactAfterDelay(Vector3 point, Vector3 normal, float delay)

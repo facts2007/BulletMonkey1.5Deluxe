@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     public int stompDamage = 25;
 
     private CharacterController controller;
+    private MouseLook look;
     private Vector3 velocity;
     private Vector3 pushVelocity;
     public void ApplyPush(Vector3 direction,float speed){direction.y=0;pushVelocity=direction.normalized*speed;}
@@ -42,11 +43,12 @@ public class PlayerMovement : MonoBehaviour
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        look = GetComponent<MouseLook>();
     }
 
     private void Update()
     {
-        if (Time.timeScale <= 0f) return;
+        if (Time.timeScale <= 0f || GameSceneFlow.IsLoading) return;
         HandleGroundedState();
         HandleMovement();
         HandleJump();
@@ -87,8 +89,10 @@ public class PlayerMovement : MonoBehaviour
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        Vector3 inputDirection = (transform.right * horizontal + transform.forward * vertical).normalized;
-        float speedMultiplier = speedBoost != null ? speedBoost.CurrentMultiplier : 1f;
+        Transform view = look != null && look.cameraPivot != null ? look.cameraPivot : transform;
+        Vector3 forward = Vector3.ProjectOnPlane(view.forward, Vector3.up).normalized;
+        Vector3 right = Vector3.Cross(Vector3.up, forward);
+        Vector3 inputDirection = (right * horizontal + forward * vertical).normalized;
         Vector3 targetVelocity = inputDirection * walkSpeed;
 
         currentVelocity = Vector3.Lerp(currentVelocity, targetVelocity, acceleration * MotionDelta);

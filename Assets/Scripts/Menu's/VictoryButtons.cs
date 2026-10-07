@@ -20,6 +20,7 @@ public class VictoryButtons : MonoBehaviour
     {
         foreach (Graphic g in buttons)
         {
+            if (g == null) continue;
             Color c = g.color;
             c.a = 0f;
             g.color = c;
@@ -28,10 +29,11 @@ public class VictoryButtons : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < fadeDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float alpha = Mathf.Clamp01(elapsed / fadeDuration);
             foreach (Graphic g in buttons)
             {
+                if (g == null) continue;
                 Color c = g.color;
                 c.a = alpha;
                 g.color = c;

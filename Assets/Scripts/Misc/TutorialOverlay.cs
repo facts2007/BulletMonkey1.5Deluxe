@@ -7,7 +7,7 @@ public class TutorialOverlay : MonoBehaviour
     public PauseManager pause;
     public GameObject panel;
     public bool autoOpen=true;
-    public bool IsOpen=>panel!=null&&panel.activeSelf;
+    public bool IsOpen=>MenuPanelMotion.IsVisible(panel);
     private bool openedFromPause;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     public static void ResetForNewGame(){seenThisRun=false;}
@@ -17,8 +17,8 @@ public class TutorialOverlay : MonoBehaviour
     {
         if(IsOpen || DungeonEncounter.IsCutsceneActive || BossFusionEncounter.IsCutsceneActive)return;
         openedFromPause=PauseManager.GameIsPaused;if(!openedFromPause)pause.Pause();
-        seenThisRun=true;pause.CloseSettings();pause.pausePanel.SetActive(false);panel.SetActive(true);
+        seenThisRun=true;pause.CloseSettings();MenuPanelMotion.Hide(pause.pausePanel,true);MenuPanelMotion.Show(panel);
     }
-    public void Close(){if(!IsOpen)return;panel.SetActive(false);if(openedFromPause){pause.pausePanel.SetActive(true);pause.CloseSettings();}else pause.Resume();}
+    public void Close(){if(!IsOpen)return;MenuPanelMotion.Hide(panel);if(openedFromPause){MenuPanelMotion.Show(pause.pausePanel);pause.CloseSettings();}else pause.Resume();}
     private void OnDestroy(){if(Instance==this)Instance=null;}
 }

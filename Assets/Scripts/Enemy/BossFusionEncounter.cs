@@ -20,8 +20,29 @@ public class BossFusionEncounter : MonoBehaviour
     [Tooltip("Optional second effect, played together with Imp Spawn Vfx.")]
     public GameObject impSpawnVfx2;
     public GameObject mergeVfxPrefab, revealVfx;
+    [Header("Transformation electricity")]
+    public GameObject electricitySphereVfx;
+    public float electricityHeight=7;
+    public float electricityFinalScale=8;
     public float vfxLifetime=6;
     private GameObject customMergeVfx;
+    private GameObject electricityInstance;
+    [Header("Boss island weather")]
+    public GameObject rainVfx;
+    public GameObject lightningVfx;
+    [Tooltip("Optional custom clouds. Empty uses simple cloud puffs over the rain area.")]
+    public GameObject rainCloudVfx;
+    public Material rainCloudMaterial;
+    public float rainCloudHeight = 12;
+    [Min(20)] public float rainCloudPuffSize = 100;
+    [Tooltip("The boss island mesh. Its bounds determine the full rain coverage.")]
+    public Transform rainArea;
+    public Vector2 rainCoverage=new Vector2(200,200);
+    public float rainHeight=70;
+    [Min(0)] public float islandRainEmission=700;
+    [Min(1)] public int islandRainMaxParticles=7000;
+    public Vector3 lightningOffset=new Vector3(25,8,12);
+    private GameObject rainInstance,lightningInstance,cloudInstance;
     [Header("Boss death explosion cutscene")]
     public GameObject deathBurstVfx, deathExplosionVfx;
     public AudioClip deathExplosionSound;
@@ -112,7 +133,7 @@ public class BossFusionEncounter : MonoBehaviour
         IsEncounterActive=IsCutsceneActive=true;
         audioManager=GameAudio.Instance;if(audioManager!=null){audioManager.SetShopOpen(false);audioManager.SetCinematicMusicDucked(true);}
         foreach(var b in player.GetComponentsInChildren<MonoBehaviour>())
-            if(b.enabled && (b is PlayerMovement || b is MouseLook || b is Gun || b is PlayerUnstuck || b is ShootCameraShake)){disabled.Add(b);b.enabled=false;}
+            if(b!=null && b.enabled && (b is PlayerMovement || b is MouseLook || b is Gun || b is PlayerUnstuck || b is ShootCameraShake)){disabled.Add(b);b.enabled=false;}
         foreach(var pause in FindObjectsByType<PauseManager>(FindObjectsSortMode.None))if(pause.enabled){disabled.Add(pause);pause.enabled=false;}
         hud=GameObject.Find("PlayerUI");if(hud!=null){hudWasActive=hud.activeSelf;hud.SetActive(false);}
         playerCamera=Camera.main;
@@ -128,8 +149,10 @@ public class BossFusionEncounter : MonoBehaviour
         dramaPosition=fusionCamera.transform.position;dramaRotation=fusionCamera.transform.rotation;cameraDrama=true;mergeProgress=0;revealTime=-1;
         mergeSource.clip=mergingSound;if(mergingSound!=null)mergeSource.Play();
         Vector3 target=Sample(mergePoint.position);
+        StartWeather(target);
         fusionCloud=new GameObject("Growing fusion fog").AddComponent<FusionCloud>();fusionCloud.transform.position=target+Vector3.up*5;fusionCloud.Initialize(fusionFogMaterial);
         if(mergeVfxPrefab!=null){Destroy(fusionCloud.gameObject);fusionCloud=null;customMergeVfx=Instantiate(mergeVfxPrefab,target,Quaternion.identity);}
+        if(electricitySphereVfx!=null){electricityInstance=Instantiate(electricitySphereVfx,target+Vector3.up*electricityHeight,Quaternion.identity);electricityInstance.name="Fusion electricity";electricityInstance.transform.localScale=Vector3.one*2;}
         for(int i=0;i<impCount;i++)
         {
             var marker=impSpawns[i%impSpawns.Length];if(marker==null)continue;
@@ -144,6 +167,7 @@ public class BossFusionEncounter : MonoBehaviour
         foreach(var runner in runners)if(runner!=null)Destroy(runner.gameObject);runners.Clear();
         if(fusionCloud!=null){fusionCloud.SetProgress(1);fusionCloud.Finish();fusionCloud=null;}
         if(customMergeVfx!=null){Destroy(customMergeVfx);customMergeVfx=null;}
+        if(electricityInstance!=null){Destroy(electricityInstance);electricityInstance=null;}
         mergeSource.Stop();
         PlayVfx(revealVfx,target,12);mergeProgress=1;revealTime=Time.time;
         var body=Instantiate(bossPrefab,target,Quaternion.identity);body.SetActive(true);Boss=body.GetComponent<EnemyHealth>();if(Boss==null)Boss=body.AddComponent<EnemyHealth>();Boss.SetFullHealth(bossHealth);
@@ -167,7 +191,8 @@ public class BossFusionEncounter : MonoBehaviour
     }
     private void Update()
     {
-        if(fusionCloud!=null){int arrived=0;foreach(var runner in runners)if(runner==null||runner.Arrived)arrived++;mergeProgress=(float)arrived/Mathf.Max(1,impCount);fusionCloud.SetProgress(mergeProgress);}
+        if(IsCutsceneActive && runners.Count>0){int arrived=0;foreach(var runner in runners)if(runner==null||runner.Arrived)arrived++;mergeProgress=(float)arrived/Mathf.Max(1,impCount);if(fusionCloud!=null)fusionCloud.SetProgress(mergeProgress);}
+        if(electricityInstance!=null)electricityInstance.transform.localScale=Vector3.one*Mathf.Lerp(2,Mathf.Max(2,electricityFinalScale),mergeProgress);
         if(mergeSource!=null)mergeSource.volume=mergingGain*(audioManager!=null?audioManager.SfxVolume:.8f);
         if(themeSource!=null)themeSource.volume=themeGain*(audioManager!=null?audioManager.MusicVolume:.7f)*(Time.timeScale>0?1:0);
         if(!Started || Defeated || IsCutsceneActive || Boss==null)return;
@@ -182,6 +207,51 @@ public class BossFusionEncounter : MonoBehaviour
         if(impSpawnVfx!=null)PlayVfx(impSpawnVfx,position,1);
         if(impSpawnVfx2!=null)PlayVfx(impSpawnVfx2,position,1);
     }
+    private void StartWeather(Vector3 center)
+    {
+        if(rainVfx!=null)
+        {
+            Vector3 position=center+Vector3.up*rainHeight;
+            Vector2 coverage=rainCoverage;
+            var areaRenderer=rainArea!=null?rainArea.GetComponent<Renderer>():null;
+            if(areaRenderer!=null)
+            {
+                var bounds=areaRenderer.bounds;
+                position.x=bounds.center.x;position.z=bounds.center.z;
+                coverage=new Vector2(bounds.size.x+20,bounds.size.z+20);
+            }
+            Vector3 cloudPosition = position + Vector3.up * rainCloudHeight;
+            if (rainCloudVfx != null)
+                cloudInstance = Instantiate(rainCloudVfx, cloudPosition, Quaternion.identity);
+            else if (rainCloudMaterial != null || fusionFogMaterial != null)
+            {
+                cloudInstance = new GameObject("Boss rain clouds");
+                cloudInstance.transform.position = cloudPosition;
+                cloudInstance.AddComponent<RainCloudCanopy>().Initialize(
+                    rainCloudMaterial != null ? rainCloudMaterial : fusionFogMaterial, coverage, rainCloudPuffSize);
+            }
+            if (cloudInstance != null) cloudInstance.name = "Boss rain clouds";
+            rainInstance=Instantiate(rainVfx,position,Quaternion.identity);rainInstance.name="Boss island rain";
+            var rain=rainInstance.GetComponent<ParticleSystem>();
+            if(rain!=null)
+            {
+                rain.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+                var shape=rain.shape;var size=shape.scale;
+                shape.scale=new Vector3(Mathf.Max(1,coverage.x),size.y,Mathf.Max(1,coverage.y));
+                var emission=rain.emission;emission.rateOverTime=islandRainEmission;
+                var main=rain.main;main.maxParticles=islandRainMaxParticles;main.startLifetime=15;main.simulationSpace=ParticleSystemSimulationSpace.World;
+                var collision=rain.collision;collision.quality=ParticleSystemCollisionQuality.Medium;collision.enableDynamicColliders=false;
+                rain.Play(true);
+            }
+        }
+        if(lightningVfx!=null){lightningInstance=Instantiate(lightningVfx,center+lightningOffset,Quaternion.identity);lightningInstance.name="Boss island lightning";}
+    }
+    private void StopWeather()
+    {
+        if(rainInstance!=null){Destroy(rainInstance);rainInstance=null;}
+        if(cloudInstance!=null){Destroy(cloudInstance);cloudInstance=null;}
+        if(lightningInstance!=null){Destroy(lightningInstance);lightningInstance=null;}
+    }
     private void PlayVfx(GameObject prefab,Vector3 position,float fallbackSize,float scale=1)
     {
         if(prefab==null){SpawnFog.Poof(position,fallbackSize);return;}
@@ -190,6 +260,7 @@ public class BossFusionEncounter : MonoBehaviour
     private IEnumerator DeathExplosion()
     {
         IsCutsceneActive=true;deathSequenceRunning=true;StopCameraDrama();
+        StopWeather();
         themeSource.Stop();if(audioManager!=null)audioManager.SetCinematicMusicDucked(true);
         Vector3 center=Boss.transform.position+Vector3.up*9;
         var renderers=Boss.GetComponentsInChildren<Renderer>(true);
@@ -202,7 +273,7 @@ public class BossFusionEncounter : MonoBehaviour
         foreach(var a in deathBody.GetComponentsInChildren<Animator>(true))a.enabled=false;
         var bar=deathBody.transform.Find("Healthbar");if(bar!=null)bar.gameObject.SetActive(false);
         foreach(var b in player.GetComponentsInChildren<MonoBehaviour>())
-            if(b.enabled&&(b is PlayerMovement||b is MouseLook||b is Gun||b is PlayerUnstuck||b is ShootCameraShake)){disabled.Add(b);b.enabled=false;}
+            if(b!=null && b.enabled&&(b is PlayerMovement||b is MouseLook||b is Gun||b is PlayerUnstuck||b is ShootCameraShake)){disabled.Add(b);b.enabled=false;}
         foreach(var pause in FindObjectsByType<PauseManager>(FindObjectsSortMode.None))if(pause.enabled){disabled.Add(pause);pause.enabled=false;}
         hud=GameObject.Find("PlayerUI");if(hud!=null){hudWasActive=hud.activeSelf;hud.SetActive(false);}
         playerCamera=Camera.main;
@@ -268,6 +339,8 @@ public class BossFusionEncounter : MonoBehaviour
     {
         if(!Started)return;
         if(customMergeVfx!=null)Destroy(customMergeVfx);
+        if(electricityInstance!=null)Destroy(electricityInstance);
+        StopWeather();
         if(deathBody!=null)Destroy(deathBody);if(deathFlash!=null)Destroy(deathFlash);
         deathSequenceRunning=false;
         if(fusionCloud!=null)Destroy(fusionCloud.gameObject);

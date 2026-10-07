@@ -29,7 +29,7 @@ public class SpeedBoostAbility : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale <= 0f) return;
+        if (Time.timeScale <= 0f || GameSceneFlow.IsLoading) return;
         if(Input.GetKeyDown(KeyCode.R))UseStored();
         Tick(Time.deltaTime);
     }

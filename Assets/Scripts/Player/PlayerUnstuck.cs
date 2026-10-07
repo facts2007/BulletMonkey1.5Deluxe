@@ -31,7 +31,7 @@ public class PlayerUnstuck : MonoBehaviour
     }
     public void Request()
     {
-        if(IsRecovering || !movement.enabled || Time.timeScale<=0)return;
+        if(IsRecovering || !movement.enabled || Time.timeScale<=0 || GameSceneFlow.IsLoading)return;
 
         if(health.currentHealth<=healthCost){Show("Unstuck needs more than "+healthCost+" HP.");return;}
         if(Time.time<confirmUntil){confirmUntil=0;StartCoroutine(Recover());return;}
