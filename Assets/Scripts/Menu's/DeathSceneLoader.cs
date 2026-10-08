@@ -17,7 +17,7 @@ public class DeathSceneLoader : MonoBehaviour
     {
         if (playerHealth != null && !playerHealth.HasEscaped && playerHealth.currentHealth <= 0 && !GameSceneFlow.IsLoading)
         {
-            GameSceneFlow.Load(deathSceneName);
+            playerHealth.Die(deathSceneName);
         }
     }
 }

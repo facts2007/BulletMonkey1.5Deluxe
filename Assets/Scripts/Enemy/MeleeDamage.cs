@@ -9,7 +9,17 @@ public class MeleeAttack : MonoBehaviour
     public Transform player;
 
     private EnemyHealth enemyHealth;
+    private MeleeEnemy movement;
+    private Collider body;
     private float attackTimer;
+    private float nextAttackTime;
+
+    private void Awake()
+    {
+        enemyHealth = GetComponent<EnemyHealth>();
+        movement = GetComponent<MeleeEnemy>();
+        body = GetComponent<Collider>();
+    }
 
     private void Start()
     {
@@ -24,17 +34,24 @@ public class MeleeAttack : MonoBehaviour
 
     private void Update()
     {
-        if (player == null) return;
+        if (player == null || Time.timeScale <= 0f || GameSceneFlow.IsLoading) return;
         if (enemyHealth != null && enemyHealth.currentHealth <= 0) return;
 
-        float distance = Vector3.Distance(transform.position, player.position);
+        var health = player.GetComponentInParent<PlayerHealth>();
+        if (!CanAttack(health) || Time.time < nextAttackTime) { attackTimer = 0; return; }
+        Vector3 offset = player.position - transform.position;
+        offset.y = 0;
+        float distance = offset.magnitude;
+        var playerBody = health.GetComponent<CharacterController>();
+        bool sameHeight = body == null || playerBody == null ||
+            (playerBody.bounds.min.y < body.bounds.max.y && playerBody.bounds.max.y > body.bounds.min.y + .12f);
 
-        if (distance <= attackRange)
+        if (distance <= attackRange && sameHeight)
         {
             attackTimer += Time.deltaTime;
-            if (attackTimer >= attackInterval)
+            if (nextAttackTime > 0 || attackTimer >= attackInterval)
             {
-                Attack();
+                TryContactAttack(health);
                 attackTimer = 0f;
             }
         }
@@ -44,18 +61,23 @@ public class MeleeAttack : MonoBehaviour
         }
     }
 
-    private void Attack()
+    private bool CanAttack(PlayerHealth health)
     {
-        PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-        if (playerHealth == null)
-        {
-            playerHealth = player.GetComponentInParent<PlayerHealth>();
-        }
+        if (!isActiveAndEnabled || Time.timeScale <= 0f || GameSceneFlow.IsLoading || health == null ||
+            health.currentHealth <= 0 || health.HasEscaped || health.IsDying ||
+            (enemyHealth != null && enemyHealth.IsDead) || (movement != null && movement.IsDodging)) return false;
+        var playerBody = health.GetComponent<CharacterController>();
+        // Feet on/above the imp's head are a stomp, never a melee hit.
+        return body == null || playerBody == null || playerBody.bounds.min.y < body.bounds.max.y - .12f;
+    }
 
-        if (playerHealth != null)
-        {
-            playerHealth.TakeDamage(damage);
-        }
+    public bool TryContactAttack(PlayerHealth health)
+    {
+        if (!CanAttack(health) || Time.time < nextAttackTime) return false;
+        health.TakeDamage(damage);
+        nextAttackTime = Time.time + Mathf.Max(.1f, attackInterval);
+        attackTimer = 0;
+        return true;
     }
 
     private void OnDrawGizmosSelected()

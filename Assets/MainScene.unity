@@ -21741,7 +21741,7 @@ MonoBehaviour:
   deathFlashAlpha: 0.45
   deathExplosionScale: 6
   deathBurstScale: 1.5
-  bossHealth: 750
+  bossHealth: 1500
   impSpeed: 12
   spawnSpacing: 0.08
   fusionCamera: {fileID: 75408001}

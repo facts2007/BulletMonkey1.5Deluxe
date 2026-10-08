@@ -14,10 +14,18 @@ public class PlayerDamageContact : MonoBehaviour
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        bool isStompOnEnemy = hit.normal.y > 0.5f && hit.gameObject.GetComponent<Enemy>() != null;
+        bool isStompOnEnemy = hit.normal.y > 0.5f && hit.collider.GetComponentInParent<Enemy>() != null;
         if (isStompOnEnemy) return;
 
-        DamageOnTouch damageSource = hit.gameObject.GetComponent<DamageOnTouch>();
+        // Melee contact and proximity attacks share one cooldown, rather than hitting twice.
+        var melee = hit.collider.GetComponentInParent<MeleeAttack>();
+        if (melee != null)
+        {
+            melee.TryContactAttack(playerHealth);
+            return;
+        }
+
+        DamageOnTouch damageSource = hit.collider.GetComponentInParent<DamageOnTouch>();
 
         if (damageSource != null && Time.time >= lastDamageTime + damageCooldown)
         {

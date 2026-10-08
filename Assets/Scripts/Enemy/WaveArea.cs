@@ -196,9 +196,16 @@ public class WaveArea : MonoBehaviour
         float hp=1+Mathf.Max(0,islandNumber-1)*healthIncreasePerIsland;
         float damage=1+Mathf.Max(0,islandNumber-1)*damageIncreasePerIsland;
         var health=enemy.GetComponent<EnemyHealth>();if(health!=null)health.SetFullHealth(Mathf.RoundToInt(health.maxHealth*hp));
-        var ranged=enemy.GetComponent<RangedEnemy>();if(ranged!=null)ranged.projectileDamage=Mathf.RoundToInt(ranged.projectileDamage*damage);
+        var ranged=enemy.GetComponent<RangedEnemy>();if(ranged!=null){ranged.projectileDamage=Mathf.RoundToInt(ranged.projectileDamage*damage);ranged.WaveOwner=this;}
         var melee=enemy.GetComponent<MeleeAttack>();if(melee!=null)melee.damage=Mathf.RoundToInt(melee.damage*damage);
         var touch=enemy.GetComponent<DamageOnTouch>();if(touch!=null)touch.damageAmount=Mathf.RoundToInt(touch.damageAmount*damage);
+    }
+    public void RegisterReinforcement(GameObject enemy)
+    {
+        if (enemy == null) return;
+        ScaleEnemy(enemy);
+        var health = enemy.GetComponent<EnemyHealth>();
+        if (health != null && !living.Contains(health)) living.Add(health);
     }
     private void GiveIslandReward()
     {

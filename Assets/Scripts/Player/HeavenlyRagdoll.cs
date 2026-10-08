@@ -8,12 +8,23 @@ public class HeavenlyRagdoll : MonoBehaviour
     public Material haloMaterial;
     public float haloHeight = .6f;
     public float haloRadius = .36f;
+    public bool showHalo = true;
     public Transform Halo {get;private set;}
     public bool IsRagdoll {get;private set;}
     public bool IsAscending {get;private set;}
     private Rigidbody liftedTorso;
     private Vector3 ascentStart;
     private float ascentElapsed, ascentDuration, ascentHeight;
+    public Vector3 TorsoPosition => bodies.TryGetValue("spine_03.x",out var torso) ? torso.position : transform.position+Vector3.up;
+    public void Explode(float force=9f)
+    {
+        Vector3 center=TorsoPosition-Vector3.up*.4f;
+        foreach(var body in bodies.Values)
+        {
+            body.AddExplosionForce(force,center,5f,1f,ForceMode.VelocityChange);
+            body.AddTorque(Random.insideUnitSphere*force,ForceMode.VelocityChange);
+        }
+    }
     public void BeginAscent(float duration, float height)
     {
         if(!IsRagdoll || IsAscending || !bodies.TryGetValue("spine_03.x",out liftedTorso))return;
@@ -92,12 +103,15 @@ public class HeavenlyRagdoll : MonoBehaviour
             followers.Add(new Follow{bone=bone,body=body,position=body.InverseTransformPoint(bone.position),rotation=Quaternion.Inverse(body.rotation)*bone.rotation});
         }
         foreach(var skin in GetComponentsInChildren<SkinnedMeshRenderer>())skin.updateWhenOffscreen=true;
+        if(showHalo)
+        {
         var halo=new GameObject("Monkey halo");halo.transform.SetParent(puppet.transform,false);Halo=halo.transform;
         var ring=halo.AddComponent<LineRenderer>();ring.useWorldSpace=false;ring.loop=true;
         ring.positionCount=64;ring.widthMultiplier=.045f;ring.numCornerVertices=3;ring.sharedMaterial=haloMaterial;
         ring.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;ring.receiveShadows=false;
         for(int i=0;i<64;i++){float angle=i*Mathf.PI*2/64;ring.SetPosition(i,new Vector3(Mathf.Cos(angle)*haloRadius,0,Mathf.Sin(angle)*haloRadius));}
         UpdateHalo();
+        }
         bodies["root.x"].AddForce(Vector3.up*1.2f+transform.forward*1.5f,ForceMode.VelocityChange);
         bodies["spine_03.x"].AddTorque(transform.right*7,ForceMode.VelocityChange);
     }

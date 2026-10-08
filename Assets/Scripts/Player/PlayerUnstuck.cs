@@ -18,7 +18,26 @@ public class PlayerUnstuck : MonoBehaviour
     private Vector3 lastPosition;
     private PlayerMovement movement;
     private PlayerHealth health;
-    private void Awake(){movement=GetComponent<PlayerMovement>();health=GetComponent<PlayerHealth>();lastPosition=transform.position;}
+    private void Awake()
+    {
+        movement=GetComponent<PlayerMovement>();health=GetComponent<PlayerHealth>();lastPosition=transform.position;
+        if(prompt==null)return;
+        prompt.rectTransform.sizeDelta=new Vector2(290,44);
+        prompt.alignment=TextAlignmentOptions.BottomRight;
+        prompt.enableAutoSizing=true;prompt.fontSizeMin=10;prompt.fontSizeMax=14.25f;
+        prompt.textWrappingMode=TextWrappingModes.NoWrap;prompt.margin=new Vector4(4,2,4,2);
+        // Merged HUDs can contain a second copy of each hint at the same position.
+        TMP_Text cheer=null;
+        foreach(var label in prompt.transform.parent.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if(label!=prompt && label.name==prompt.name)label.gameObject.SetActive(false);
+            if(label.name!="Q cheer hint")continue;
+            if(cheer!=null){label.gameObject.SetActive(false);continue;}
+            cheer=label;cheer.gameObject.SetActive(true);
+            var rect=cheer.rectTransform;rect.anchoredPosition=prompt.rectTransform.anchoredPosition+Vector2.up*54;
+            rect.sizeDelta=new Vector2(290,22);cheer.alignment=TextAlignmentOptions.BottomRight;
+        }
+    }
     private void Update()
     {
         Vector3 delta=transform.position-lastPosition;lastPosition=transform.position;delta.y=0;
@@ -35,7 +54,7 @@ public class PlayerUnstuck : MonoBehaviour
 
         if(health.currentHealth<=healthCost){Show("Unstuck needs more than "+healthCost+" HP.");return;}
         if(Time.time<confirmUntil){confirmUntil=0;StartCoroutine(Recover());return;}
-        confirmUntil=Time.time+4;Show("Unstuck?  -10 HP  [T] confirm");
+        confirmUntil=Time.time+4;Show("UNSTUCK?  -"+healthCost+" HP\n[T] AGAIN TO CONFIRM");
     }
     private void Show(string text){if(prompt!=null){prompt.text=text;prompt.gameObject.SetActive(true);}messageUntil=Time.time+4;}
     public bool FindDestination(out Vector3 destination)

@@ -314,7 +314,7 @@ Transform:
   m_GameObject: {fileID: 3330301730936605456}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.47324842, y: 1.5378771, z: 1.4326057}
+  m_LocalPosition: {x: 0.456, y: 1.589, z: 1.444}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -487,8 +487,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e05df5b91b5095f4084adb9c188a7dc4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
-  maxHealth: 300
-  currentHealth: 300
+  maxHealth: 600
+  currentHealth: 600
   pointValue: 10
   healthBar: {fileID: 7316904615251408150}
   redBar: {fileID: 1051643561708930392}
@@ -544,6 +544,22 @@ MonoBehaviour:
   retreatRange: 4
   player: {fileID: 0}
   characterAnimation: {fileID: 1958014991419995574}
+  muzzleFlarePrefab: {fileID: 2971485119542820933, guid: cdc1a864d95e02c4080553d3f6feabfe, type: 3}
+  useHomingBullet: 1
+  homingBullet:
+    interval: 8
+    speed: 1.5
+    turnDegreesPerSecond: 90
+    health: 30
+    damage: 25
+    sizeMultiplier: 16
+    timeoutSeconds: 15
+    ammoReward: 30
+    visualPrefab: {fileID: 0}
+    impPrefab: {fileID: 3595957089953483482, guid: 102177761f3672b41a9e43c1aa0e11eb, type: 3}
+    ammoPrefab: {fileID: 7495273584512899063, guid: 8c3caf651bcc0434090e62280e9a1d8d, type: 3}
+    explosionVfx: {fileID: 2456710671011082351, guid: ee1300dd6239c2241874030e6cf8948c, type: 3}
+    explosionSound: {fileID: 0}
 --- !u!114 &1958014991419995574
 MonoBehaviour:
   m_ObjectHideFlags: 0

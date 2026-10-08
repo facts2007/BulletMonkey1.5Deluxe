@@ -28,6 +28,10 @@ public class Gun : MonoBehaviour
 
     [Header("UI")]
     public TextMeshProUGUI ammoText;
+    [Header("Ammo counter pop")]
+    [Min(.05f)] public float ammoPopSeconds = .25f;
+    [Range(1f, 1.5f)] public float ammoFirePopScale = 1.1f;
+    [Range(1f, 1.5f)] public float ammoPickupPopScale = 1.2f;
 
     [Header("Animation and super shooting")]
     public CharacterAnimationDriver characterAnimation;
@@ -43,11 +47,14 @@ public class Gun : MonoBehaviour
     private ParticleSystem[] muzzleParticles;
     private Quaternion muzzleFlareRotation;
     private MouseLook playerLook;
+    private Coroutine ammoPop;
+    private Vector3 ammoBaseScale = Vector3.one;
 
     private void Awake()
     {
         Instance = this;
         playerLook = GetComponentInParent<MouseLook>();
+        if (ammoText != null) ammoBaseScale = ammoText.transform.localScale;
         currentAmmo = maxAmmo;
         UpdateAmmoText();
 
@@ -94,6 +101,7 @@ public class Gun : MonoBehaviour
             currentAmmo--;
             UpdateAmmoText();
         }
+        PopAmmoCounter(ammoFirePopScale);
 
         Transform spawnPoint = muzzlePoint != null ? muzzlePoint : transform;
         Ray aimRay = aimCamera != null
@@ -137,8 +145,10 @@ public class Gun : MonoBehaviour
 
         if (hasHit)
         {
+            var missile = hit.collider.GetComponentInParent<Projectile>();
             EnemyHealth enemyHealth = hit.collider.GetComponentInParent<EnemyHealth>();
-            if (enemyHealth != null)
+            if (missile != null && missile.IsHomingMissile) missile.TakeDamage(damage);
+            else if (enemyHealth != null)
             {
                 enemyHealth.TakeDamage(damage);
             }
@@ -201,16 +211,57 @@ public class Gun : MonoBehaviour
         if (ammoText != null) ammoText.text = currentAmmo + "/" + maxAmmo;
     }
 
+    private void PopAmmoCounter(float scale)
+    {
+        if (ammoText == null || !isActiveAndEnabled) return;
+        if (ammoPop != null) StopCoroutine(ammoPop);
+        ammoPop = StartCoroutine(AnimateAmmoCounter(scale));
+    }
+
+    private IEnumerator AnimateAmmoCounter(float scale)
+    {
+        var counter = ammoText.rectTransform;
+        Vector3 from = counter.localScale, peak = ammoBaseScale * scale;
+        float growSeconds = Mathf.Max(.025f, ammoPopSeconds * .55f);
+        float settleSeconds = Mathf.Max(.025f, ammoPopSeconds * .45f);
+        for (float elapsed = 0; elapsed < growSeconds; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / growSeconds) - 1f;
+            float outBack = 1f + 2.70158f * t * t * t + 1.70158f * t * t;
+            counter.localScale = Vector3.LerpUnclamped(from, peak, outBack);
+            yield return null;
+        }
+        from = counter.localScale;
+        for (float elapsed = 0; elapsed < settleSeconds; elapsed += Time.deltaTime)
+        {
+            counter.localScale = Vector3.Lerp(from, ammoBaseScale, Mathf.SmoothStep(0, 1, elapsed / settleSeconds));
+            yield return null;
+        }
+        counter.localScale = ammoBaseScale;
+        ammoPop = null;
+    }
+
+    private void OnDisable()
+    {
+        if (ammoPop != null) StopCoroutine(ammoPop);
+        ammoPop = null;
+        if (ammoText != null) ammoText.transform.localScale = ammoBaseScale;
+    }
+
     public void Reload()
     {
+        bool changed = currentAmmo < maxAmmo;
         currentAmmo = maxAmmo;
         UpdateAmmoText();
+        if (changed) PopAmmoCounter(ammoPickupPopScale);
     }
 
     public void AddAmmo(int amount)
     {
+        int previous = currentAmmo;
         currentAmmo = Mathf.Min(currentAmmo + amount, maxAmmo);
         UpdateAmmoText();
+        if (currentAmmo > previous) PopAmmoCounter(ammoPickupPopScale);
     }
 
     public void UpgradeDamage(int amount)
@@ -228,5 +279,6 @@ public class Gun : MonoBehaviour
         maxAmmo += amount;
         currentAmmo += amount;
         UpdateAmmoText();
+        if (amount > 0) PopAmmoCounter(ammoPickupPopScale);
     }
 }

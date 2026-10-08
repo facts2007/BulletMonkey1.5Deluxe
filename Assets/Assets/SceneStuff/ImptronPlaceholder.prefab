@@ -370,8 +370,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e05df5b91b5095f4084adb9c188a7dc4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
-  maxHealth: 750
-  currentHealth: 750
+  maxHealth: 1500
+  currentHealth: 1500
   pointValue: 0
   healthBar: {fileID: 8978687380644515498}
   redBar: {fileID: 2062637591336238229}
@@ -456,6 +456,26 @@ MonoBehaviour:
   scatterRadius: 7
   impExplosionRadius: 3
   impExplosionDamage: 20
+  useHomingImp: 1
+  homingImp:
+    interval: 8
+    speed: 1.5
+    turnDegreesPerSecond: 90
+    health: 30
+    damage: 25
+    sizeMultiplier: 2.5
+    timeoutSeconds: 15
+    ammoReward: 30
+    visualPrefab: {fileID: 5527943319742431379, guid: 8c9919c3be1638b4ab579a8e84a9a5a7, type: 3}
+    impPrefab: {fileID: 3595957089953483482, guid: 102177761f3672b41a9e43c1aa0e11eb, type: 3}
+    ammoPrefab: {fileID: 7495273584512899063, guid: 8c3caf651bcc0434090e62280e9a1d8d, type: 3}
+    explosionVfx: {fileID: 2456710671011082351, guid: ee1300dd6239c2241874030e6cf8948c, type: 3}
+    explosionSound: {fileID: 0}
+  homingImpLaunchPoint: {fileID: 0}
+  homingImpLaunchHeight: 8
+  homingImpSpin: 720
+  homingThrusterVfx: {fileID: 1781949194303238870, guid: dd986d04bcc6dc748a53d8c3d1d42a6d, type: 3}
+  homingThrusterScale: 0.35
   cinematicEnabled: 1
   cinematicMinTimer: 1.5
   cinematicMaxTimer: 2.5

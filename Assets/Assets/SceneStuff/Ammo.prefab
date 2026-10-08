@@ -121,7 +121,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 13.34596, y: 0, z: -47.74}
-  m_LocalScale: {x: 0.40503, y: 0.10912755, z: 0.25588}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3582484535136770969}
@@ -203,7 +203,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 0.8, y: 0.6, z: 0.8}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &8625908620405175201
 Rigidbody:
@@ -258,7 +258,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LootMotion
   visual: {fileID: 4495251532613949912}
-  visualPrefab: {fileID: 0}
+  visualPrefab: {fileID: 5183545093969231971, guid: cff9680a94b064a4db4f1002eefa898d, type: 3}
   spinSpeed: 100
   flightSeconds: 0.75
   jumpHeight: 1.8

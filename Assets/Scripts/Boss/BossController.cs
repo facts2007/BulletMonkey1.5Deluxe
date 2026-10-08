@@ -118,6 +118,15 @@ public class BossController : MonoBehaviour
     public float scatterRadius=7;
     public float impExplosionRadius=3;
     public int impExplosionDamage=20;
+    [Header("Giant homing rocket imp")]
+    public bool useHomingImp;
+    public HomingBulletSettings homingImp = new HomingBulletSettings { sizeMultiplier = 2.5f };
+    public Transform homingImpLaunchPoint;
+    public float homingImpLaunchHeight = 8;
+    public float homingImpSpin = 720;
+    public GameObject homingThrusterVfx;
+    public float homingThrusterScale = .35f;
+    private float homingImpTimer;
     private readonly System.Collections.Generic.List<GameObject> transientObjects=new System.Collections.Generic.List<GameObject>();
     private EnemyHealth health;
     private bool stopped;
@@ -139,7 +148,7 @@ public class BossController : MonoBehaviour
     private void Update()
     {
         if(health!=null && health.IsDead){Shutdown();return;}
-        if (!CanFight) return;
+        if (!CanFight || Time.timeScale <= 0 || GameSceneFlow.IsLoading) return;
 
         if (player == null)
         {
@@ -147,11 +156,21 @@ public class BossController : MonoBehaviour
             return;
         }
 
-        if (!player.gameObject.activeInHierarchy) return;
+        if (!player.gameObject.activeInHierarchy || playerHealth == null || playerHealth.currentHealth <= 0 || playerHealth.HasEscaped) return;
+
+        if (useHomingImp) homingImpTimer += Time.deltaTime;
 
         if(!isAttacking)FaceTarget();
 
-        if (isAttacking || attacks.Length == 0) return;
+        if (isAttacking) return;
+        if (useHomingImp && homingImpTimer >= Mathf.Max(1, homingImp.interval))
+        {
+            homingImpTimer = 0;
+            attackTimer = 0;
+            FireHomingImp();
+            return;
+        }
+        if (attacks.Length == 0) return;
 
         attackTimer += Time.deltaTime;
         if (attackTimer >= timeBetweenAttacks)
@@ -172,6 +191,55 @@ public class BossController : MonoBehaviour
         {
             playerHealth = found.GetComponentInParent<PlayerHealth>();
         }
+    }
+
+    private void FireHomingImp()
+    {
+        var prefab = homingImp.visualPrefab != null ? homingImp.visualPrefab : thrownImpVisualPrefab;
+        if (prefab == null || playerHealth == null || !CanFight) return;
+        Vector3 launch = homingImpLaunchPoint != null ? homingImpLaunchPoint.position :
+            transform.position + Vector3.up * homingImpLaunchHeight + transform.forward * 3;
+        var staging = new GameObject("Rocket imp staging"); staging.SetActive(false);
+        var carrier = new GameObject("Final boss homing rocket imp");
+        carrier.transform.SetParent(staging.transform, false);
+        carrier.transform.position = launch;
+        var rotor = new GameObject("Spinning imp"); rotor.transform.SetParent(carrier.transform, false);
+        var visual = Instantiate(prefab, rotor.transform, false);
+        visual.transform.localScale *= Mathf.Max(1, homingImp.sizeMultiplier);
+        foreach (var animator in visual.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
+        foreach (var collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+        var renderers = visual.GetComponentsInChildren<Renderer>(true);
+        var bounds = new Bounds(launch, Vector3.one);
+        if (renderers.Length > 0)
+        {
+            bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            visual.transform.position += launch - bounds.center;
+        }
+        float width = Mathf.Max(bounds.size.x, bounds.size.z);
+        var body = carrier.AddComponent<BoxCollider>();
+        body.size = new Vector3(width, bounds.size.y, width);
+        if (homingThrusterVfx != null)
+        {
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var jet = Instantiate(homingThrusterVfx, carrier.transform, false);
+                jet.name = side < 0 ? "Left downward thruster" : "Right downward thruster";
+                jet.transform.localPosition = new Vector3(side * width * .275f, -bounds.extents.y - .1f, 0);
+                jet.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                jet.transform.localScale *= homingThrusterScale;
+            }
+        }
+        Vector3 aim = player.position + Vector3.up * Mathf.Max(1.1f, bounds.extents.y + .5f) - launch;
+        if (aim.sqrMagnitude > .001f) carrier.transform.rotation = Quaternion.LookRotation(aim);
+        var drops = walkingImpPrefab != null ? walkingImpPrefab.GetComponent<Enemy>() : null;
+        var missile = carrier.AddComponent<Projectile>();
+        missile.ConfigureHoming(health, playerHealth, homingImp, null, drops != null ? drops.ammoDropPrefab : null, impExplosionVfx);
+        missile.SetSpinningVisual(rotor.transform, homingImpSpin);
+        carrier.transform.SetParent(null, true); carrier.SetActive(true); Destroy(staging);
+        transientObjects.RemoveAll(item => item == null);
+        transientObjects.Add(carrier);
+        if (GameAudio.Instance != null) GameAudio.Instance.PlayShot(false);
     }
 
     private void FaceTarget()

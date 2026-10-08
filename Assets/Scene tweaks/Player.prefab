@@ -676,6 +676,13 @@ MonoBehaviour:
   healthBarSpeed: 8
   redBarSpeed: 4
   redBarDelay: 0.5
+  deathCamera: {fileID: 0}
+  deathExplosionVfx: {fileID: 2456710671011082351, guid: ee1300dd6239c2241874030e6cf8948c, type: 3}
+  deathExplosionSound: {fileID: 0}
+  deathRagdollSeconds: 1.5
+  deathExplosionSeconds: 0.85
+  deathExplosionScale: 2.5
+  deathCameraShake: 0.18
 --- !u!114 &2191410335814663908
 MonoBehaviour:
   m_ObjectHideFlags: 0

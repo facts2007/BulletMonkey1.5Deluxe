@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using UnityEngine.VFX;
 
 [RequireComponent(typeof(EnemyHealth))]
 [RequireComponent(typeof(NavMeshAgent))]
@@ -17,6 +18,7 @@ public class RangedEnemy : MonoBehaviour
     [Min(1)] public float noscopeDamageMultiplier = 2;
     public float noscopeJumpHeight = 1.5f;
     public float noscopeSeconds = .8f;
+    [Range(0,1)] public float noscopeChainChance = .33f;
     private bool trickShotActive;
     private Transform trickVisual;
     private Vector3 visualStart;
@@ -32,6 +34,20 @@ public class RangedEnemy : MonoBehaviour
 
     [Header("Animation")]
     public CharacterAnimationDriver characterAnimation;
+
+    [Header("Muzzle flash")]
+    [Tooltip("Uses the player's flash when empty. Plays only when a projectile is fired.")]
+    public GameObject muzzleFlarePrefab;
+    private GameObject muzzleFlareInstance;
+    private VisualEffect[] muzzleVisualEffects;
+    private ParticleSystem[] muzzleParticles;
+    private Quaternion muzzleFlareRotation;
+
+    [Header("Miniboss giant homing bullet")]
+    public bool useHomingBullet;
+    public HomingBulletSettings homingBullet = new HomingBulletSettings();
+    public WaveArea WaveOwner { get; set; }
+    private float homingTimer;
 
     private float fireTimer, nextPathUpdate;
     private Vector3 lastDestination;
@@ -85,6 +101,16 @@ public class RangedEnemy : MonoBehaviour
         }
 
         FaceTarget();
+
+        if (useHomingBullet)
+        {
+            homingTimer += Time.deltaTime;
+            if (homingTimer >= Mathf.Max(1, homingBullet.interval))
+            {
+                FireHomingBullet(); homingTimer = 0; fireTimer = 0;
+                return;
+            }
+        }
 
         if (distance < retreatRange)
         {
@@ -155,20 +181,36 @@ public class RangedEnemy : MonoBehaviour
     {
         trickShotActive=true;
         trickVisual=characterAnimation!=null && characterAnimation.animator!=null ? characterAnimation.animator.transform : null;
-        if(trickVisual==null){FireProjectile(true);trickShotActive=false;yield break;}
-        visualStart=trickVisual.localPosition;visualRotation=trickVisual.localRotation;
+        if(trickVisual!=null){visualStart=trickVisual.localPosition;visualRotation=trickVisual.localRotation;}
         if(agent!=null && agent.isOnNavMesh)agent.ResetPath();
-        float duration=Mathf.Max(.1f,noscopeSeconds);
-        bool fired=false;
-        for(float t=0;t<duration;t+=Time.deltaTime)
+        double duration=System.Math.Max(.1,noscopeSeconds);
+        bool chain;
+        do
         {
-            if(enemyHealth.IsDead)break;
-            float f=t/duration;
-            trickVisual.localPosition=visualStart+Vector3.up*Mathf.Sin(f*Mathf.PI)*noscopeJumpHeight;
-            trickVisual.localRotation=visualRotation*Quaternion.Euler(0,360*f,0);
-            if(!fired && f>=.65f){FireProjectile(true);fired=true;}
+            while(Time.timeScale<=0f)yield return null;
+            if(enemyHealth.IsDead || player==null || player.GetComponent<PlayerHealth>()?.currentHealth<=0)break;
+            FaceTarget();
+            bool fired=false;
+            for(double t=0;t<duration;t+=Time.deltaTime)
+            {
+                if(enemyHealth.IsDead)break;
+                float f=(float)(t/duration);
+                if(trickVisual!=null)
+                {
+                    trickVisual.localPosition=visualStart+Vector3.up*Mathf.Sin(f*Mathf.PI)*noscopeJumpHeight;
+                    trickVisual.localRotation=visualRotation*Quaternion.Euler(0,360*f,0);
+                }
+                if(!fired && f>=.65f){FireProjectile(true);fired=true;}
+                yield return null;
+            }
+            // Even a spin shorter than one frame must fire once, never skip its shot.
+            if(!enemyHealth.IsDead && !fired)FireProjectile(true);
+            if(trickVisual!=null){trickVisual.localPosition=visualStart;trickVisual.localRotation=visualRotation;}
+            chain=!enemyHealth.IsDead && Random.value<noscopeChainChance;
+            duration*=.5;
+            // No chain-count cap; yield between spins even at extreme speeds.
             yield return null;
-        }
+        }while(chain);
         ResetTrickVisual();
     }
     private void ResetTrickVisual()
@@ -176,7 +218,13 @@ public class RangedEnemy : MonoBehaviour
         if(trickVisual!=null && trickShotActive){trickVisual.localPosition=visualStart;trickVisual.localRotation=visualRotation;}
         trickShotActive=false;
     }
-    private void OnDisable(){StopAllCoroutines();ResetTrickVisual();}
+    private void OnDisable()
+    {
+        StopAllCoroutines();ResetTrickVisual();
+        if (muzzleVisualEffects != null) foreach (var effect in muzzleVisualEffects) if (effect != null) effect.Stop();
+        if (muzzleParticles != null) foreach (var particles in muzzleParticles)
+            if (particles != null) particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
     private void FireProjectile(bool noscope)
     {
         if (projectilePrefab == null || firePoint == null || player == null) return;
@@ -189,11 +237,12 @@ public class RangedEnemy : MonoBehaviour
         }
 
         Vector3 targetPoint = player.position + Vector3.up * aimHeightOffset;
-        Vector3 direction = (targetPoint - firePoint.position).normalized;
-
-        Vector3 shotPosition=firePoint.position+(noscope?Vector3.up*noscopeJumpHeight*.8f:Vector3.zero);
-        direction=(targetPoint-shotPosition).normalized;
-        GameObject projectileObject = Instantiate(projectilePrefab, shotPosition, Quaternion.LookRotation(direction));
+        // The muzzle is already parented to the jumping/spinning visual.
+        Vector3 shotPosition = firePoint.position;
+        Vector3 direction = (targetPoint - shotPosition).normalized;
+        Quaternion shotRotation = Quaternion.LookRotation(direction);
+        PlayMuzzleFlare(shotRotation);
+        GameObject projectileObject = Instantiate(projectilePrefab, shotPosition, shotRotation);
         Projectile projectile = projectileObject.GetComponent<Projectile>();
         if (projectile == null)
         {
@@ -203,6 +252,56 @@ public class RangedEnemy : MonoBehaviour
         projectile.damage = noscope ? Mathf.RoundToInt(projectileDamage*noscopeDamageMultiplier) : projectileDamage;
         projectile.direction = direction;
         projectile.isNoscope = noscope;
+    }
+
+    private void PlayMuzzleFlare(Quaternion shotRotation)
+    {
+        if (muzzleFlarePrefab == null && Gun.Instance != null) muzzleFlarePrefab = Gun.Instance.muzzleFlarePrefab;
+        if (muzzleFlarePrefab == null) return;
+        bool created = false;
+        if (muzzleFlareInstance == null)
+        {
+            muzzleFlareInstance = Instantiate(muzzleFlarePrefab, firePoint);
+            muzzleFlareInstance.name = "Ranged muzzle flare";
+            muzzleFlareInstance.transform.localPosition = Vector3.zero;
+            muzzleVisualEffects = muzzleFlareInstance.GetComponentsInChildren<VisualEffect>(true);
+            muzzleParticles = muzzleFlareInstance.GetComponentsInChildren<ParticleSystem>(true);
+            created = true;
+        }
+        muzzleFlareRotation = shotRotation * muzzleFlarePrefab.transform.localRotation;
+        muzzleFlareInstance.transform.SetPositionAndRotation(firePoint.position, muzzleFlareRotation);
+        if (created) return;
+        foreach (var effect in muzzleVisualEffects) if (effect != null) effect.Play();
+        foreach (var particles in muzzleParticles)
+        {
+            if (particles == null) continue;
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particles.Play(true);
+        }
+    }
+
+    private void FireHomingBullet()
+    {
+        if (firePoint == null || player == null || enemyHealth.IsDead) return;
+        var prefab = homingBullet.visualPrefab != null ? homingBullet.visualPrefab : projectilePrefab;
+        if (prefab == null) return;
+        Quaternion rotation = Quaternion.LookRotation(player.position + Vector3.up * aimHeightOffset - firePoint.position);
+        // Configure inactive so inherited Bullet.Start timers cannot destroy the giant shot early.
+        var staging = new GameObject("Giant bullet staging"); staging.SetActive(false);
+        var obj = Instantiate(prefab, firePoint.position, rotation, staging.transform);
+        obj.name = "Miniboss giant homing bullet";
+        obj.transform.localScale *= Mathf.Max(1, homingBullet.sizeMultiplier);
+        var projectile = obj.GetComponent<Projectile>(); if (projectile == null) projectile = obj.AddComponent<Projectile>();
+        projectile.ConfigureHoming(this);
+        obj.transform.SetParent(null, true); obj.SetActive(true); Destroy(staging);
+        if (characterAnimation != null) characterAnimation.NotifyShot();
+        PlayMuzzleFlare(rotation);
+        if (GameAudio.Instance != null) GameAudio.Instance.PlayShot(false);
+    }
+
+    private void LateUpdate()
+    {
+        if (muzzleFlareInstance != null) muzzleFlareInstance.transform.rotation = muzzleFlareRotation;
     }
 
     private void OnDrawGizmosSelected()

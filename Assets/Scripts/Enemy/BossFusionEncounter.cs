@@ -56,7 +56,7 @@ public class BossFusionEncounter : MonoBehaviour
     public float deathExplosionScale=6;
     public float deathBurstScale=1.5f;
     private FusionCloud fusionCloud;
-    public int bossHealth=750;
+    public int bossHealth=1500;
     public float impSpeed=12;
     public float spawnSpacing=.08f;
     [Header("Cutscene — edit this camera's pose to frame the fusion")]

@@ -46,6 +46,8 @@ public class Enemy : MonoBehaviour
     public void Stomp(int damage)
     {
         if (dying || !canBeStomped) return;
+        var melee = GetComponent<MeleeEnemy>();
+        if (melee != null && (melee.IsDodging || melee.TryDodgeStomp())) return;
         EnemyHealth health = GetComponent<EnemyHealth>();
         if (health != null)
         {

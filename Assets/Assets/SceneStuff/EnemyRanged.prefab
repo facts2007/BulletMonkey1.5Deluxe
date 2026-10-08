@@ -128,7 +128,7 @@ Transform:
   m_GameObject: {fileID: 4136994459425241653}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.47324842, y: 1.5378771, z: 1.4326057}
+  m_LocalPosition: {x: 0.456, y: 1.589, z: 1.444}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -426,6 +426,7 @@ MonoBehaviour:
   retreatRange: 4
   player: {fileID: 0}
   characterAnimation: {fileID: 2484638464933296314}
+  muzzleFlarePrefab: {fileID: 2971485119542820933, guid: cdc1a864d95e02c4080553d3f6feabfe, type: 3}
 --- !u!114 &2484638464933296314
 MonoBehaviour:
   m_ObjectHideFlags: 0
