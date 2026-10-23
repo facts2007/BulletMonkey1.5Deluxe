@@ -18410,21 +18410,6 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
---- !u!115 &488457136
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: N64CameraFX
-  m_Namespace: 
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &494800673
 GameObject:
   m_ObjectHideFlags: 0
@@ -18643,7 +18628,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 502061896}
-  - component: {fileID: 502061897}
   m_Layer: 0
   m_Name: Lighting
   m_TagString: Untagged
@@ -18671,18 +18655,6 @@ Transform:
   - {fileID: 2077109006}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &502061897
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 502061894}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6690483cf74a1de4d867fe8401f0a128, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::N64JungleLighting
 --- !u!1 &502233302
 GameObject:
   m_ObjectHideFlags: 0
@@ -69302,9 +69274,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2470231217019256298, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2060189861}
-    - targetCorrespondingSourceObject: {fileID: 2470231217019256298, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2060189862}
   m_SourcePrefab: {fileID: 100100000, guid: 9d57cd04ff982f04fb0d38aeef60a7fe, type: 3}
 --- !u!1 &2019675612
 GameObject:
@@ -69816,18 +69785,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RetroCamera
   verticalResolution: 300
   pixelMaterial: {fileID: 2100000, guid: f507c01fcc2b6ef4c8fffafeb880168b, type: 2}
---- !u!114 &2060189862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2060189856}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 488457136}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::N64CameraFX
 --- !u!1001 &2060768005
 PrefabInstance:
   m_ObjectHideFlags: 0

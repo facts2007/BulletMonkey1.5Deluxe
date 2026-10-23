@@ -71,30 +71,94 @@ public class PlayerUnstuck : MonoBehaviour
         }
         return found;
     }
-    private IEnumerator Recover()
+ private IEnumerator Recover()
+{
+    Vector3 destination;
+    if (!FindDestination(out destination)) 
     {
-        Vector3 destination;if(!FindDestination(out destination)){Show("No safe island landing found.");yield break;}
-        health.TakeDamage(healthCost);IsRecovering=true;Show("HELICOPTER RESCUE  -10 HP");
-        var disabled=new List<Behaviour>();
-        foreach(var b in GetComponentsInChildren<MonoBehaviour>())
-            if(b.enabled && (b is PlayerMovement || b is MouseLook || b is Gun || b is CharacterAnimationDriver || b is ShootCameraShake)){disabled.Add(b);b.enabled=false;}
-        var cc=GetComponent<CharacterController>();cc.enabled=false;
-        var visual=transform.Find("BulletMonkeyVisual");
-        var copy=Instantiate(visual.gameObject,visual.position,visual.rotation);copy.transform.localScale=visual.lossyScale;
-        foreach(var a in copy.GetComponentsInChildren<Animator>())a.enabled=false;
-        var rag=copy.AddComponent<HeavenlyRagdoll>();rag.haloMaterial=haloMaterial;rag.Flop();visual.gameObject.SetActive(false);
-        yield return new WaitForSeconds(.8f);
-        Vector3 start=transform.position;rag.PrepareHelicopter();
-        for(float tilt=0;tilt<.4f;tilt+=Time.deltaTime){rag.HelicopterPose(Vector3.zero,0,65*Mathf.SmoothStep(0,1,tilt/.4f));yield return null;}
-        for(float t=0;t<flightSeconds;t+=Time.deltaTime)
-        {
-            float f=Mathf.Clamp01(t/flightSeconds);Vector3 p=Vector3.Lerp(start,destination,Mathf.SmoothStep(0,1,f))+Vector3.up*Mathf.Sin(f*Mathf.PI)*6;
-            rag.HelicopterPose(p-start,1080*f,65);transform.position=p;yield return null;
-        }
-        transform.position=destination+Vector3.up*.15f;rag.HidePuppet();Destroy(copy);visual.gameObject.SetActive(true);
-        cc.enabled=true;movement.ResetAfterRecovery();foreach(var b in disabled)if(b!=null)b.enabled=true;
-        lastPosition=transform.position;blockedFor=0;lastBlocked=-100;IsRecovering=false;
-        if(prompt!=null)prompt.gameObject.SetActive(false);
+        Show("No safe island landing found.");
+        yield break;
     }
+
+    if (health != null) health.TakeDamage(healthCost);
+    IsRecovering = true;
+    Show("HELICOPTER RESCUE  -10 HP");
+
+    var disabled = new List<Behaviour>();
+    foreach (var b in GetComponentsInChildren<MonoBehaviour>())
+    {
+        if (b != null && b.enabled && (b is PlayerMovement || b is MouseLook || b is Gun || b is CharacterAnimationDriver || b is ShootCameraShake))
+        {
+            disabled.Add(b);
+            b.enabled = false;
+        }
+    }
+
+    // Safe check for CharacterController
+    var cc = GetComponent<CharacterController>();
+    if (cc != null) cc.enabled = false;
+
+    // Safe check for visual child object
+    var visual = transform.Find("BulletMonkeyVisual");
+    if (visual == null)
+    {
+        Debug.LogError("PlayerUnstuck: 'BulletMonkeyVisual' child object could not be found on the player!", this);
+        IsRecovering = false;
+        yield break;
+    }
+
+    var copy = Instantiate(visual.gameObject, visual.position, visual.rotation);
+    copy.transform.localScale = visual.lossyScale;
+
+    foreach (var a in copy.GetComponentsInChildren<Animator>())
+    {
+        if (a != null) a.enabled = false;
+    }
+
+    var rag = copy.AddComponent<HeavenlyRagdoll>();
+    rag.haloMaterial = haloMaterial;
+    rag.Flop();
+    visual.gameObject.SetActive(false);
+
+    yield return new WaitForSeconds(.8f);
+
+    Vector3 start = transform.position;
+    rag.PrepareHelicopter();
+
+    for (float tilt = 0; tilt < .4f; tilt += Time.deltaTime)
+    {
+        rag.HelicopterPose(Vector3.zero, 0, 65 * Mathf.SmoothStep(0, 1, tilt / .4f));
+        yield return null;
+    }
+
+    for (float t = 0; t < flightSeconds; t += Time.deltaTime)
+    {
+        float f = Mathf.Clamp01(t / flightSeconds);
+        Vector3 p = Vector3.Lerp(start, destination, Mathf.SmoothStep(0, 1, f)) + Vector3.up * Mathf.Sin(f * Mathf.PI) * 6;
+        rag.HelicopterPose(p - start, 1080 * f, 65);
+        transform.position = p;
+        yield return null;
+    }
+
+    transform.position = destination + Vector3.up * .15f;
+    rag.HidePuppet();
+    Destroy(copy);
+    visual.gameObject.SetActive(true);
+
+    if (cc != null) cc.enabled = true;
+    if (movement != null) movement.ResetAfterRecovery();
+
+    foreach (var b in disabled)
+    {
+        if (b != null) b.enabled = true;
+    }
+
+    lastPosition = transform.position;
+    blockedFor = 0;
+    lastBlocked = -100;
+    IsRecovering = false;
+    
+    if (prompt != null) prompt.gameObject.SetActive(false);
+}
 }
 
