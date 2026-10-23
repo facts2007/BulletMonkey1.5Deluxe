@@ -203,7 +203,8 @@ public class Gun : MonoBehaviour
             yield return new WaitForSeconds(delay);
         }
 
-        Instantiate(impactEffect, point, Quaternion.LookRotation(normal));
+        GameObject impactInstance = Instantiate(impactEffect, point, Quaternion.LookRotation(normal));
+        Destroy(impactInstance, 3f); // Automatically cleans up the effect after 3 seconds
     }
 
     private void UpdateAmmoText()
